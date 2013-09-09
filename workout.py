@@ -51,7 +51,7 @@ reg_adapter = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
                     'Control',
                     'Class',
                     '{4D36E972-E325-11CE-BFC1-08002BE10318}',
-                    '{0:0>4}'.format(target_adapter.Index)
+                    '{0:0>4}'.format(adapter.Index)
                 ])
         )
 
