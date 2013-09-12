@@ -6,6 +6,6 @@
 - You can also specify the olsrd.conf you want in the invocation. Give an invalid invocation and olsrd.exe will provide help.
 
 ###workout.py
-Goal: workout.py is roughly tending toward olsrd/files/olsrd-adhoc-setup
+Goal: workout.py is roughly tending toward [olsrd/files/olsrd-adhoc-setup](https://github.com/opentechinstitute/olsrd/blob/release-0.6.5.4/files/olsrd-adhoc-setup)
 
 
