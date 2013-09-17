@@ -75,7 +75,7 @@ for idx, net in enumerate(net_list):
                                        net["commotion"])
 target_net = net_list[int(raw_input("Enter the # of the network to join or Q to exit: "))]
 
-if target_net == ("Q" || "q"):
+if target_net == ("Q"):
     print ("Exiting...")
     exit()
 
