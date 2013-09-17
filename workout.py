@@ -71,29 +71,30 @@ def set_adapter_state(wmi_adapter=None, verb='enable'):
 
 # scan for existing Commotion wireless networks
 ifaces = PyWiWi.getWirelessInterfaces()
-commotions = []
+net_list = []
 for iface in ifaces:
     networks = PyWiWi.getWirelessNetworkBssList(iface)
     for network in networks:
-        print network.bssid, network.ssid
-        if network.bssid == commotion_BSSID:
-            commotions.append({"interface": iface,
-                               "network": network})
+        net_list.append({"interface": iface,
+                         "network": network,
+                         "commotion": "+" if (network.bssid ==
+                                      commotion_BSSID) else
+                                      "-"})
 
 # choose desired network
-if len(commotions) < 1:
-    print "No valid Commotion BSSID's present, exiting"
-    exit()
-else:
-    commotions.sort(key=lambda opt: opt["network"].signal_quality, reverse=True)
-    for idx, net in enumerate(commotions):
-        print "#", idx
-        print net["interface"]
-        print net["network"]
-                #{0:>2} Interface:     Quality:{1.link_quality:3}% {1.dot11Ssid}'.format(idx,
-                                                                            #net["interface"],
-                                                                            #net["network"])
-    target_net = commotions[int(raw_input("Enter the # of the network to join: "))]
+net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
+print "#  CW? Interface     Qual BSSID             SSID"
+for idx, net in enumerate(net_list):
+    print "".join(["{0:>2} ",
+                   "{3:^3.3} ",
+                   "{1.description:13.13} ",
+                   "{2.link_quality:>3}% ",
+                   "{2.bssid} ",
+                   "{2.ssid}"]).format(idx,
+                                       net["interface"],
+                                       net["network"],
+                                       net["commotion"])
+target_net = net_list[int(raw_input("Enter the # of the network to join or Q to exit: "))]
 
 # disconnect from current network
 #PyWiWi.disconnect(target_net["interface"])
@@ -135,6 +136,6 @@ holdup = ''
 while holdup != '!':
     holdup = raw_input("Enter ! to go back to previous settings\n")
 #set_MAC(wmi_adapter, original_state["MACAddress"])
-set_adapter_state(wmi_adapter, 'disable')
-set_adapter_state(wmi_adapter, 'enable')
+#set_adapter_state(wmi_adapter, 'disable')
+#set_adapter_state(wmi_adapter, 'enable')
 
