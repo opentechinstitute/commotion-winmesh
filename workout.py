@@ -14,6 +14,8 @@ commotion_BSSID = '12CAFFEEBABE' # shows up in a few Commotion places
 commotion_SSID = 'commotion-wireless.net'
 ASADMIN = 'asadmin'
 
+WMI = wmi.WMI()
+
 # via http://stackoverflow.com/questions/279237/import-a-module-from-a-folder
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(
 		inspect.currentframe()
@@ -30,23 +32,6 @@ if cmd_subfolder not in sys.path:
 import WindowsWifi as PyWiWi
 
 print 'You must run this script as an administrator'
-
-WMI = wmi.WMI()
-
-# enable or disable adapter
-def set_adapter_state(wmi_adapter=None, verb='enable'):
-    if (wmi_adapter is not None) and (verb is not None):
-        status = {
-            'enable': wmi_adapter.Enable,
-            'disable': wmi_adapter.Disable
-        }[verb]()
-        if status[0] != 0:
-            print ''.join(['Couldn\'t ', verb, ' adapter (error:', str(status[0]), ')'])
-        else:
-            print ''.join(['Adapter ', verb, 'd'])
-        return status
-    else:
-        return None
 
 # scan for existing Commotion wireless networks
 ifaces = PyWiWi.getWirelessInterfaces()
@@ -78,6 +63,12 @@ target_net = net_list[int(raw_input("Enter the # of the network to join or Q to 
 if target_net == ("Q"):
     print ("Exiting...")
     exit()
+
+print "network", target_net["network"]
+print "interface", target_net["interface"]
+
+
+
 
 # disconnect from current network
 PyWiWi.disconnect(target_net["interface"])
