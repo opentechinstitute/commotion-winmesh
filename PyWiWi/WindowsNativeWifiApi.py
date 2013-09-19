@@ -674,7 +674,7 @@ class WLAN_CONNECTION_PARAMETERS(Structure):
         elsewhere.
     """
     _fields_ = [("wlanConnectionMode", WLAN_CONNECTION_MODE),
-                ("Profile", c_wchar * 256),
+                ("Profile", LPCWSTR),
                 ("pDot11_ssid", POINTER(DOT11_SSID)),
                 ("pDesiredBssidList", POINTER(DOT11_BSSID_LIST)),
                 ("dot11BssType", DOT11_BSS_TYPE),

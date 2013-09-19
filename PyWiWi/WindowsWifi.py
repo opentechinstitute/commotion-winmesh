@@ -246,6 +246,41 @@ def disconnect(wireless_interface):
     WlanDisconnect(handle, wireless_interface.guid)
     WlanCloseHandle(handle)
 
+def connect(wireless_interface, connection_params):
+    """
+        The WlanConnect function attempts to connect to a specific network.
+
+        DWORD WINAPI WlanConnect(
+          _In_        HANDLE hClientHandle,
+          _In_        const GUID *pInterfaceGuid,
+          _In_        const PWLAN_CONNECTION_PARAMETERS pConnectionParameters,
+          _Reserved_  PVOID pReserved
+        );
+    """
+    """
+        connection_params should be a dict with this structure:
+        { "connectionMode": "valid connection mode string",
+          "profile": ("profile name string" | "profile xml" | None)*,
+          "ssid": "ssid string",
+          "bssidList": [ "desired bssid string", ... ],
+          "bssType": valid bss type int,
+          "flags": valid flag dword in 0x00000000 format }
+        * Currently, only the name string is supported here.
+    """
+    handle = WlanOpenHandle()
+    cnxp = connection_params
+    bssids = DOT11_BSSID_LIST()
+    # prepare WLAN_CONNECTION_PARAMETERS
+    WlanConnect(handle,
+                wireless_interface.guid,
+                WLAN_CONNECTION_PARAMETERS(cnxp.connectionMode,
+                                           profile,
+                                           ssid,
+                                           bssids,
+                                           bssType,
+                                           flags)
+    WlanCloseHandle(handle)
+
 def queryInterface(wireless_interface, opcode_item):
     """
     """
