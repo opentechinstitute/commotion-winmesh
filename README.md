@@ -28,6 +28,8 @@ Platform: Windows 7 Professional
 
 1. Install the [WMI](https://pypi.python.org/pypi/WMI/) Python extension
 
+1. Install the [Comtypes](http://sourceforge.net/projects/comtypes/files/comtypes/) Python extension
+
 We also depend on the [winreg](http://docs.python.org/2/library/_winreg.html) and
 [ctypes](http://docs.python.org/2/library/ctypes.html) Python extensions, but these
 are built into Python 2.7.
