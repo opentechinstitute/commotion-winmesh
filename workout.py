@@ -25,7 +25,7 @@ if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
 cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(
-		inspect.getfile(inspect.currentframe()
+                inspect.getfile(inspect.currentframe()
 ))[0], "PyWiWi")))
 if cmd_subfolder not in sys.path:
     sys.path.insert(0, cmd_subfolder)
@@ -62,11 +62,8 @@ for idx, net in enumerate(net_list):
                                        net["interface"],
                                        net["network"],
                                        net["commotion"])
+# FIXME: below will just exit due to int if Q or other letter entered
 target_net = net_list[int(raw_input("Enter the # of the network to join or Q to exit: "))]
-
-if target_net == ("Q"):
-    print ("Exiting...")
-    exit()
 
 print "network", target_net["network"]
 print "interface", target_net["interface"]
@@ -79,6 +76,11 @@ cnxp = {"connectionMode": 1,
         "bssType": target_net["network"].bss_type,
         "flags": 0x00000000}
 PyWiWi.connect(target_net["interface"], cnxp)
+
+# stay connected until done
+holdup = ''
+while holdup != '!':
+    holdup = raw_input("Enter ! to disconnect\n")
 
 # disconnect from current network
 PyWiWi.disconnect(target_net["interface"])
