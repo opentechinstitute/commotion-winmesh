@@ -4,15 +4,20 @@ Platform: Debian Wheezy.
 
 ### Cross-compiling olsrd for Windows on Debian
 
-    > apt-get install mingw-w64 mingw-w64-tools dpkg-cross bison flex
+1. The version of mingw-w64 in the Debian Wheezy repository has a bug (fixed
+   in [changeset
+   5386](http://sourceforge.net/apps/trac/mingw-w64/changeset/5386)) which
+   causes problems for us, so we need to use a newer version.
+
+
+1. ``> apt-get install dpkg-cross bison flex``
 
 1. Download and unzip [olsrd](http://www.olsr.org/releases/0.6/olsrd-0.6.6.tar.gz)
-where you want to work. NB: We're using the olsr.org version partly because of
-olsrd changeset 5386, which isn't yet incorporated into the Commotion fork.
+where you want to work. 
 
 1. Change to the olsrd directory.
 
-    > CC=i686-w64-mingw32-gcc make build_all OS=win32
+1. ``> CC=i686-w64-mingw32-gcc make build_all OS=win32``
 
 __TODO__
 
@@ -23,7 +28,8 @@ Platform: Windows 7 Professional
 1. Install the python.org [Python
    2.7.5](http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi)
 
-1. Install the [pywin32](http://sourceforge.net/projects/pywin32/) Python
+1. Install the
+   [pywin32](http://sourceforge.net/projects/pywin32/files/?source=navbar) Python
    extension
 
 1. Install the [WMI](https://pypi.python.org/pypi/WMI/) Python extension
