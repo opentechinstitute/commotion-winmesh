@@ -247,6 +247,7 @@ def disconnect(wireless_interface):
     WlanCloseHandle(handle)
 
 def connect(wireless_interface, connection_params):
+    # FIXME
     """
         The WlanConnect function attempts to connect to a specific network.
 
@@ -267,18 +268,46 @@ def connect(wireless_interface, connection_params):
           "flags": valid flag dword in 0x00000000 format }
         * Currently, only the name string is supported here.
     """
+    """
+    The WlanConnect function attempts to connect to a specific network.
+
+    DWORD WINAPI WlanConnect(
+            _In_        HANDLE hClientHandle,
+            _In_        const GUID *pInterfaceGuid,
+            _In_        const PWLAN_CONNECTION_PARAMETERS pConnectionParameters,
+            _Reserved_  PVOID pReserved
+    );
+    """
     handle = WlanOpenHandle()
-    cnxp = connection_params
-    bssids = DOT11_BSSID_LIST()
-    # prepare WLAN_CONNECTION_PARAMETERS
-    WlanConnect(handle,
+    cnxp = WLAN_CONNECTION_PARAMETERS()
+    cnxp.wlanConnectionMode = connection_params["connectionMode"]
+    if connection_params["connectionMode"] == 'wlan_connection_mode_profile':
+        # strProfile = name of profile to use for connection
+        cnxp.strProfile = connection_params["profile"]
+    elif connection_params["connectionMode"] == 'wlan_connection_mode_temporary_profile':
+        # strProfile = profile XML
+        cnxp.strProfile = connection_params["profile"]
+    else:
+        # strProfile = NULL
+        cnxp.strProfile = None
+    cnxp.pDot11_ssid = POINTER(DOT11_SSID)
+    cnxp.pDot11_ssid.SSID = connection_params["ssid"]
+    cnxp.pDot11_ssid.SSIDLength = len(connection_params["ssid"])
+    cnxp.pDesiredBssidList = DOT11_BSSID_LIST()
+    cnxp.pDesiredBssidList.Header = NDIS_OBJECT_HEADER()
+    cnxp.pDesiredBssidList.Header.Type = NDIS_OBJECT_TYPE_DEFAULT
+    cnxp.pDesiredBssidList.Header.Revision = DOT11_BSSID_LIST_REVISION_1
+    cnxp.pDesiredBssidList.Header.Size = sizeof(DOT11_BSSID_LIST) 
+    cnxp.pDesiredBssidList.uNumofEntries = len(connection_params["bssidList"])
+    # uTotalNumOfEntries isn't actually explained anywhere
+    cnxp.pDesiredBssidList.uTotalNumOfEntries = len(connection_params["bssidList"])
+    cnxp.pDesiredBssidList.BSSIDs = connection_params["bssidList"]
+    cnxp.dot11BssType = DOT11_BSS_TYPE_DICT[connection_params["bssType"]]
+    cnxp.dwFlags = connection_params["flags"]
+    result = WlanConnect(handle,
                 wireless_interface.guid,
-                WLAN_CONNECTION_PARAMETERS(cnxp.connectionMode,
-                                           profile,
-                                           ssid,
-                                           bssids,
-                                           bssType,
-                                           flags)
+                cnxp,
+                None)
     WlanCloseHandle(handle)
 
 def queryInterface(wireless_interface, opcode_item):

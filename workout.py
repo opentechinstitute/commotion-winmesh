@@ -1,7 +1,7 @@
 import os
 import sys
 import inspect
-import win32com.shell.shell as shell
+#import win32com.shell.shell as shell
 import _winreg # http://docs.python.org/2.7/library/_winreg.html?highlight=winreg#_winreg
 import ctypes # http://docs.python.org/2.7/library/ctypes.html#module-ctypes
 import wmi # http://timgolden.me.uk/python/wmi/index.html
@@ -13,6 +13,7 @@ from ctypes import cdll # loads libs exporting via cdecl
 commotion_BSSID = '12CAFFEEBABE' # shows up in a few Commotion places
 commotion_SSID = 'commotion-wireless.net'
 ASADMIN = 'asadmin'
+xml_profile_path = "commotion_wireless_profile.xml"
 
 WMI = wmi.WMI()
 
@@ -32,6 +33,9 @@ if cmd_subfolder not in sys.path:
 import WindowsWifi as PyWiWi
 
 print 'You must run this script as an administrator'
+
+with open(xml_profile_path, "r") as f_profile:
+    commotion_wlan_profile_xml = "".join(line.rstrip() for line in f_profile)
 
 # scan for existing Commotion wireless networks
 ifaces = PyWiWi.getWirelessInterfaces()
@@ -67,8 +71,14 @@ if target_net == ("Q"):
 print "network", target_net["network"]
 print "interface", target_net["interface"]
 
-
-
+# connect to chosen network
+cnxp = {"connectionMode": 1,
+        "profile": commotion_wlan_profile_xml,
+        "ssid": target_net["network"].ssid,
+        "bssidList": target_net["network"].bssid,
+        "bssType": target_net["network"].bss_type,
+        "flags": 0x00000000}
+PyWiWi.connect(target_net["interface"], cnxp)
 
 # disconnect from current network
 PyWiWi.disconnect(target_net["interface"])

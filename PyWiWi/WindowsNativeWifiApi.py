@@ -34,7 +34,12 @@ ERROR_SUCCESS = 0
 CLIENT_VERSION_WINDOWS_XP_SP3 = 1
 CLIENT_VERSION_WINDOWS_VISTA_OR_LATER = 2
 
+# Windot11.h defines
 DOT11_SSID_MAX_LENGTH = 32
+DOT11_BSSID_LIST_REVISION_1 = 1
+
+# Ntddndis.h defines
+NDIS_OBJECT_TYPE_DEFAULT = 0x80
 
 wlanapi = windll.LoadLibrary('wlanapi.dll')
 
@@ -48,13 +53,6 @@ WLAN_INTERFACE_STATE_DICT = {0: "wlan_interface_state_not_ready",
                              5: "wlan_interface_state_associating",
                              6: "wlan_interface_state_discovering",
                              7: "wlan_interface_state_authenticating"}
-
-# The DOT11_BSS_TYPE enumerated type defines a basic service set (BSS) network
-# type.
-DOT11_BSS_TYPE = c_uint
-DOT11_BSS_TYPE_DICT = {1: "dot11_BSS_type_infrastructure",
-                       2: "dot11_BSS_type_independent",
-                       3: "dot11_BSS_type_any"}
 
 # The DOT11_MAC_ADDRESS types are used to define an IEEE media access control
 # (MAC) address.
@@ -642,8 +640,8 @@ class DOT11_BSSID_LIST(Structure):
         } DOT11_BSSID_LIST, *PDOT11_BSSID_LIST;
     """
     _fields_ = [("Header", NDIS_OBJECT_HEADER),
-                ("NumOfEntries", c_ulong),
-                ("TotalNumOfEntries", c_ulong),
+                ("uNumOfEntries", c_ulong),
+                ("uTotalNumOfEntries", c_ulong),
                 ("BSSIDs", DOT11_MAC_ADDRESS * 1)]
 
 class WLAN_CONNECTION_PARAMETERS(Structure):
@@ -674,11 +672,11 @@ class WLAN_CONNECTION_PARAMETERS(Structure):
         elsewhere.
     """
     _fields_ = [("wlanConnectionMode", WLAN_CONNECTION_MODE),
-                ("Profile", LPCWSTR),
+                ("strProfile", LPCWSTR),
                 ("pDot11_ssid", POINTER(DOT11_SSID)),
                 ("pDesiredBssidList", POINTER(DOT11_BSSID_LIST)),
                 ("dot11BssType", DOT11_BSS_TYPE),
-                ("Flags", DWORD)]
+                ("dwFlags", DWORD)]
 
 def WlanConnect(hClientHandle, pInterfaceGuid, pConnectionParameters):
     """
