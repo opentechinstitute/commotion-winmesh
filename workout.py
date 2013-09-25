@@ -27,11 +27,11 @@ cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
-cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(
-                inspect.getfile(inspect.currentframe()
-))[0], "PyWiWi")))
-if cmd_subfolder not in sys.path:
-    sys.path.insert(0, cmd_subfolder)
+#cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(
+                #inspect.getfile(inspect.currentframe()
+#))[0], "PyWiWi")))
+#if cmd_subfolder not in sys.path:
+    #sys.path.insert(0, cmd_subfolder)
 
 import WindowsWifi as PyWiWi
 
