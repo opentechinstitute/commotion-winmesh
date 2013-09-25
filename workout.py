@@ -10,7 +10,9 @@ from ctypes import windll # loads libs exporting via stdcall
 from ctypes import wintypes
 from ctypes import cdll # loads libs exporting via cdecl
 
-commotion_BSSID = '12CAFFEEBABE' # shows up in a few Commotion places
+import subprocess # for netsh
+
+commotion_BSSID = '12:CA:FF:EE:BA:BE' # shows up in a few Commotion places
 commotion_SSID = 'commotion-wireless.net'
 ASADMIN = 'asadmin'
 xml_profile_path = "commotion_wireless_profile.xml"
@@ -68,14 +70,27 @@ target_net = net_list[int(raw_input("Enter the # of the network to join or Q to 
 print "network", target_net["network"]
 print "interface", target_net["interface"]
 
+# add a profile for commotion
+subprocess.call("".join(["netsh wlan add profile",
+                         " filename=commotion_wireless_profile.xml"]))
+
 # connect to chosen network
-cnxp = {"connectionMode": 1,
-        "profile": commotion_wlan_profile_xml,
-        "ssid": target_net["network"].ssid,
+# http://msdn.microsoft.com/en-us/library/windows/desktop/ms706851(v=vs.85).aspx
+cnxp = {"connectionMode": 0,
+        "profile": "commotion_wireless_profile.xml",
+        #"ssid": target_net["network"].ssid,
+        "ssid": None,
         "bssidList": [target_net["network"].bssid],
+        # bssType must match type from profile provided
         "bssType": target_net["network"].bss_type,
-        "flags": 0x00000000}
-PyWiWi.connect(target_net["interface"], cnxp)
+        "flags": 0}
+#PyWiWi.connect(target_net["interface"], cnxp)
+
+subprocess.call("".join(["netsh wlan connect",
+                         " name=commotion-wireless.net",
+                         " interface=\"",
+                         "Wireless Network Connection",
+                         "\""]))
 
 # stay connected until done
 holdup = ''
@@ -83,15 +98,21 @@ while holdup != '!':
     holdup = raw_input("Enter ! to disconnect\n")
 
 # disconnect from current network
-PyWiWi.disconnect(target_net["interface"])
-
-
+#PyWiWi.disconnect(target_net["interface"])
+subprocess.call("".join(["netsh wlan disconnect",
+                         " interface=\"",
+                         "Wireless Network Connection",
+                         "\""]))
 
 # show current info for adapter
 
 
 # go back to old configuration when ready
-holdup = ''
-while holdup != '!':
-    holdup = raw_input("Enter ! to go back to previous settings\n")
+delete_profile = raw_input("Delete Commotion Wireless profile? (Y|N)\n")
+if delete_profile == 'Y':
+    subprocess.call("".join(["netsh wlan delete profile",
+                             " name=commotion-wireless.net",
+                             " interface=\"",
+                             "Wireless Network Connection",
+                             "\""]))
 

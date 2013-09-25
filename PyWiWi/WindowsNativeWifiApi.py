@@ -696,8 +696,8 @@ def WlanConnect(hClientHandle, pInterfaceGuid, pConnectionParameters):
                          c_void_p]
     func_ref.restype = DWORD
     result = func_ref(hClientHandle,
-                      byref(pInterfaceGuid),
-                      byref(pConnectionParameters),
+                      pointer(pInterfaceGuid),
+                      pointer(pConnectionParameters),
                       None)
     if result != ERROR_SUCCESS:
         raise Exception("".join(["WlanConnect failed with error ", str(result)]))
