@@ -2,31 +2,30 @@ import os
 import sys
 import inspect
 #import win32com.shell.shell as shell
-import _winreg # http://docs.python.org/2.7/library/_winreg.html?highlight=winreg#_winreg
-import ctypes # http://docs.python.org/2.7/library/ctypes.html#module-ctypes
+import _winreg # http://docs.python.org/2.7/library/_winreg.html
+import ctypes # http://docs.python.org/2.7/library/ctypes.html
 import wmi # http://timgolden.me.uk/python/wmi/index.html
+import subprocess # for netsh and olsrd
 
 from ctypes import windll # loads libs exporting via stdcall
 from ctypes import wintypes
 from ctypes import cdll # loads libs exporting via cdecl
 
-import subprocess # for netsh
-
 commotion_BSSID = '12:CA:FF:EE:BA:BE' # shows up in a few Commotion places
 commotion_SSID = 'commotion-wireless.net'
 commotion_profile_name = 'commotion-wireless.net'
-ASADMIN = 'asadmin'
-xml_profile_path = "commotion_wireless_profile.xml"
+commotion_profile_path = "commotion_wireless_profile.xml"
 
 WMI = wmi.WMI()
 
-# via http://stackoverflow.com/questions/279237/import-a-module-from-a-folder
+# http://stackoverflow.com/questions/279237/import-a-module-from-a-folder
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(
 		inspect.currentframe()
 ))[0]))
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
+# Import from subdirectories. (__init__.py works in some envs, not others)
 try:
     import WindowsWifi as PyWiWi
 except ImportError:
@@ -50,21 +49,22 @@ for iface in ifaces:
                                       commotion_BSSID) else
                                       "-"})
 
+# WMI is the best way to get interface "common name" for netsh, etc.
 wmi_ifaces = wmi.WMI().Win32_NetworkAdapter()
 ifaces_by_guid = {}
 for iface in wmi_ifaces:
     ifaces_by_guid[iface.GUID] = iface
 
-def get_netsh_name(iface):
-    return ifaces_by_guid[str(iface.guid)].NetConnectionID
+def get_netsh_name(pywiwi_iface):
+    return ifaces_by_guid[str(pywiwi_iface.guid)].NetConnectionID
 
-def make_profile():
+def netsh_add_profile():
     subprocess.call("".join(["netsh wlan add profile",
                              " filename=\"",
-                             xml_profile_path,
+                             commotion_profile_path,
                              "\""]))
 
-def connect(netsh_name):
+def netsh_connect(netsh_name):
     subprocess.call("".join(["netsh wlan connect",
                              " name=\"",
                              commotion_profile_name,
@@ -97,9 +97,9 @@ def make_network():
     target_iface.netsh_name = get_netsh_name(target_iface)
     # add a profile for commotion
     # if this profile already exists, it will not be added again
-    make_profile()
+    netsh_add_profile()
     # connect to the network
-    connect(target_iface.netsh_name)
+    netsh_connect(target_iface.netsh_name)
     # start olsrd
     start_olsrd(target_iface.netsh_name)
     hold_and_finish(target_iface.netsh_name)
@@ -130,7 +130,7 @@ def hold_and_finish(netsh_name):
                                  netsh_name,
                                  "\""]))
 
-#with open(xml_profile_path, "r") as f_profile:
+#with open(commotion_profile_path, "r") as f_profile:
     #commotion_wlan_profile_xml = "".join(line.rstrip() for line in f_profile)
 
 # choose desired network
@@ -164,7 +164,7 @@ else:
 # connect to chosen network
 # http://msdn.microsoft.com/en-us/library/windows/desktop/ms706851(v=vs.85).aspx
 #cnxp = {"connectionMode": 0,
-        #"profile": xml_profile_path,
+        #"profile": commotion_profile_path,
         ##"ssid": target_net["network"].ssid,
         #"ssid": None,
         #"bssidList": [target_net["network"].bssid],
