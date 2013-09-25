@@ -72,7 +72,7 @@ print "interface", target_net["interface"]
 cnxp = {"connectionMode": 1,
         "profile": commotion_wlan_profile_xml,
         "ssid": target_net["network"].ssid,
-        "bssidList": target_net["network"].bssid,
+        "bssidList": [target_net["network"].bssid],
         "bssType": target_net["network"].bss_type,
         "flags": 0x00000000}
 PyWiWi.connect(target_net["interface"], cnxp)

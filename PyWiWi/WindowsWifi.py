@@ -279,35 +279,53 @@ def connect(wireless_interface, connection_params):
     );
     """
     handle = WlanOpenHandle()
-    cnxp = WLAN_CONNECTION_PARAMETERS()
-    cnxp.wlanConnectionMode = connection_params["connectionMode"]
+    strProfile = ""
+    bssType = ""
+    bssidListEntries = len(connection_params["bssidList"])
+    # determine strProfile
     if connection_params["connectionMode"] == 'wlan_connection_mode_profile':
         # strProfile = name of profile to use for connection
-        cnxp.strProfile = connection_params["profile"]
+        strProfile = connection_params["profile"]
     elif connection_params["connectionMode"] == 'wlan_connection_mode_temporary_profile':
         # strProfile = profile XML
-        cnxp.strProfile = connection_params["profile"]
+        strProfile = connection_params["profile"]
     else:
         # strProfile = NULL
-        cnxp.strProfile = None
-    # ref http://docs.python.org/2/library/ctypes.html#ctypes-pointers
-    cnxp.pDot11_ssid = pointer(DOT11_SSID())
-    cnxp.pDot11_ssid.SSID = connection_params["ssid"]
-    #cnxp.pDot11_ssid.SSIDLength = len(connection_params["ssid"])
-    cnxp.pDesiredBssidList = pointer(DOT11_BSSID_LIST())
-    #cnxp.pDesiredBssidList.Header = NDIS_OBJECT_HEADER()
-    #cnxp.pDesiredBssidList.Header.Type = NDIS_OBJECT_TYPE_DEFAULT
-    #cnxp.pDesiredBssidList.Header.Revision = DOT11_BSSID_LIST_REVISION_1
-    #cnxp.pDesiredBssidList.Header.Size = sizeof(DOT11_BSSID_LIST) 
-    cnxp.pDesiredBssidList.uNumofEntries = len(connection_params["bssidList"])
-    # uTotalNumOfEntries isn't actually explained anywhere
-    cnxp.pDesiredBssidList.uTotalNumOfEntries = len(connection_params["bssidList"])
-    cnxp.pDesiredBssidList.BSSIDs = connection_params["bssidList"]
+        strProfile = None
+    # look up bssType
     for key, val in DOT11_BSS_TYPE_DICT.items():
         if val == connection_params["bssType"]:
-            cnxp.dot11BssType = key
+            bssType = key
             break
-    cnxp.dwFlags = connection_params["flags"]
+    # ssid
+    ssid = DOT11_SSID(
+            len(connection_params["ssid"]),
+            connection_params["ssid"]
+            )
+    # bssidList
+    bssids = []
+    for bssidish in connection_params["bssidList"]:
+        bssidish = tuple(int(n, 16) for n in bssidish.split(":"))
+        bssids.append((DOT11_MAC_ADDRESS)(*bssidish))
+    bssids = (DOT11_MAC_ADDRESS * len(bssids))(*bssids)
+    bssidListHeader = NDIS_OBJECT_HEADER()
+    bssidListHeader.Type = chr(NDIS_OBJECT_TYPE_DEFAULT)
+    bssidListHeader.Revision = chr(DOT11_BSSID_LIST_REVISION_1)
+    bssidListHeader.Size = sizeof(DOT11_BSSID_LIST)
+    bssidList = DOT11_BSSID_LIST(
+            bssidListHeader,
+            bssidListEntries,
+            bssidListEntries,
+            bssids)
+    # put it all together
+    cnxp = WLAN_CONNECTION_PARAMETERS(
+            connection_params["connectionMode"],
+            strProfile,
+            pointer(ssid),
+            pointer(bssidList),
+            bssType,
+            connection_params["flags"]
+            )
     result = WlanConnect(handle,
                 wireless_interface.guid,
                 cnxp)
