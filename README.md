@@ -21,7 +21,7 @@ where you want to work.
 
 __TODO__
 
-### Preparing the Windows environment
+### Preparing the Windows development environment
 
 Platform: Windows 7 Professional
 
@@ -35,6 +35,9 @@ Platform: Windows 7 Professional
 1. Install the [WMI](https://pypi.python.org/pypi/WMI/) Python extension
 
 1. Install the [Comtypes](http://sourceforge.net/projects/comtypes/files/comtypes/) Python extension
+
+1. Install [PyGTK](http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.24/) using an all-in-one installer
+
 
 We also depend on the [winreg](http://docs.python.org/2/library/_winreg.html) and
 [ctypes](http://docs.python.org/2/library/ctypes.html) Python extensions, but these
