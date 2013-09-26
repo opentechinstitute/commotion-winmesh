@@ -138,8 +138,11 @@ def bssid_struct_to_string(dot11Bssid):
     return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
 
 def get_current_net_bssid(PyWiWi_interface):
-    cnx = PyWiWi.queryInterface(net["interface"], 'current_connection')
+    cnx = PyWiWi.queryInterface(PyWiWi_interface, 'current_connection')
     return bssid_struct_to_string(cnx.wlanAssociationAttributes.dot11Bssid)
+
+def iface_has_commotion(PyWiWi_iface):
+    return commotion_BSSID == get_current_net_bssid(PyWiWi_iface)
 
 # choose desired network
 net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
