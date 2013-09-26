@@ -138,8 +138,12 @@ def bssid_struct_to_string(dot11Bssid):
     return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
 
 def get_current_net_bssid(PyWiWi_interface):
-    cnx = PyWiWi.queryInterface(PyWiWi_interface, 'current_connection')
-    return bssid_struct_to_string(cnx.wlanAssociationAttributes.dot11Bssid)
+    try:
+        cnx = PyWiWi.queryInterface(PyWiWi_interface, 'current_connection')
+        bssid = bssid_struct_to_string(cnx.wlanAssociationAttributes.dot11Bssid)
+    except:
+        bssid = ""
+    return bssid
 
 def iface_has_commotion(PyWiWi_iface):
     return commotion_BSSID == get_current_net_bssid(PyWiWi_iface)
@@ -148,7 +152,7 @@ def iface_has_commotion(PyWiWi_iface):
 net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
 print "#   @ CW? Interface     Qual BSSID             SSID"
 for idx, net in enumerate(net_list):
-    bssid_now = get_current_net_bssid(net)
+    bssid_now = get_current_net_bssid(net["interface"])
     net["network"].isCurrent = str(bssid_now == net["network"].bssid)
     print "".join(["{0:>2} ",
                    "{2.isCurrent:^3.3}",
@@ -166,7 +170,7 @@ net_choice = raw_input("".join(["Enter the # of the network to join,\n",
 
 print net_list[int(net_choice)-1]["interface"].initial_net
 print "Selected interface is connected to ^"
-exit()
+#exit()
 
 # FIXME:
 # TODO:
