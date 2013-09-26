@@ -38,10 +38,25 @@ except ImportError:
     import WindowsWifi as PyWiWi
     import WindowsNativeWifiApi as PWWnw
 
+def bssid_struct_to_string(dot11Bssid):
+    return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
+
+def get_current_net_bssid(PyWiWi_iface):
+    try:
+        cnx = PyWiWi.queryInterface(PyWiWi_iface, 'current_connection')
+        bssid = bssid_struct_to_string(cnx.wlanAssociationAttributes.dot11Bssid)
+    except:
+        bssid = ""
+    return bssid
+
+def iface_has_commotion(PyWiWi_iface):
+    return commotion_BSSID == get_current_net_bssid(PyWiWi_iface)
+
 # collect existing networks on wireless interfaces
 ifaces = PyWiWi.getWirelessInterfaces()
 net_list = []
 for iface in ifaces:
+    iface.initial_net = get_current_net_bssid(iface)
     networks = PyWiWi.getWirelessNetworkBssList(iface)
     for network in networks:
         net_list.append({"interface": iface,
@@ -101,6 +116,8 @@ def make_network():
     netsh_add_profile()
     # connect to the network
     netsh_connect(target_iface.netsh_name)
+    print "do we advertise commotion bssid?", iface_has_commotion(target_iface)
+    raw_input('press enter to continue')
     # start olsrd
     start_olsrd(target_iface.netsh_name)
     hold_and_finish(target_iface.netsh_name)
@@ -110,17 +127,13 @@ def hold_and_finish(netsh_name):
     holdup = ''
     while holdup != '!':
         holdup = raw_input("Enter ! to disconnect\n")
-
     # disconnect from current network
     #PyWiWi.disconnect(target_net["interface"])
     subprocess.call("".join(["netsh wlan disconnect",
                              " interface=\"",
                              netsh_name,
                              "\""]))
-
     # show current info for adapter
-
-
     # go back to old configuration when ready
     delete_profile = raw_input("Delete Commotion Wireless profile? (Y|N)\n")
     if delete_profile == 'Y':
@@ -134,28 +147,13 @@ def hold_and_finish(netsh_name):
 #with open(commotion_profile_path, "r") as f_profile:
     #commotion_wlan_profile_xml = "".join(line.rstrip() for line in f_profile)
 
-def bssid_struct_to_string(dot11Bssid):
-    return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
-
-def get_current_net_bssid(PyWiWi_interface):
-    try:
-        cnx = PyWiWi.queryInterface(PyWiWi_interface, 'current_connection')
-        bssid = bssid_struct_to_string(cnx.wlanAssociationAttributes.dot11Bssid)
-    except:
-        bssid = ""
-    return bssid
-
-def iface_has_commotion(PyWiWi_iface):
-    return commotion_BSSID == get_current_net_bssid(PyWiWi_iface)
-
 # choose desired network
 net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
 print "#   @ CW? Interface     Qual BSSID             SSID"
 for idx, net in enumerate(net_list):
-    bssid_now = get_current_net_bssid(net["interface"])
-    net["network"].isCurrent = str(bssid_now == net["network"].bssid)
+    isCurrent = str(net["interface"].initial_net == net["network"].bssid)
     print "".join(["{0:>2} ",
-                   "{2.isCurrent:^3.3}",
+                   "{4:^3.1}",
                    "{3:^3.3} ",
                    "{1.description:13.13} ",
                    "{2.link_quality:>3}% ",
@@ -163,7 +161,8 @@ for idx, net in enumerate(net_list):
                    "{2.ssid}"]).format(idx+1,
                                        net["interface"],
                                        net["network"],
-                                       net["commotion"])
+                                       net["commotion"],
+                                       isCurrent)
 net_choice = raw_input("".join(["Enter the # of the network to join,\n",
                            "enter 0 (zero) to start a new network,\n",
                            "or enter Q to quit:\n"]))
