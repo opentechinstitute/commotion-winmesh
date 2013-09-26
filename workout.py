@@ -134,18 +134,19 @@ def hold_and_finish(netsh_name):
 #with open(commotion_profile_path, "r") as f_profile:
     #commotion_wlan_profile_xml = "".join(line.rstrip() for line in f_profile)
 
+def bssid_struct_to_string(dot11Bssid):
+    return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
+
+def get_current_net_bssid(PyWiWi_interface):
+    cnx = PyWiWi.queryInterface(net["interface"], 'current_connection')
+    return bssid_struct_to_string(cnx.wlanAssociationAttributes.dot11Bssid)
+
 # choose desired network
 net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
 print "#   @ CW? Interface     Qual BSSID             SSID"
 for idx, net in enumerate(net_list):
-    temphandle = PWWnw.WlanOpenHandle()
-    a = PyWiWi.WlanQueryInterface(temphandle,
-                                                net["interface"].guid,
-                                                PWWnw.WLAN_INTF_OPCODE(7))
-    b = a.contents.wlanAssociationAttributes.dot11Bssid
-    c = ":".join(map(lambda x: "%02X" % x, b))
-    net["network"].isCurrent = str(c == net["network"].bssid)
-    PWWnw.WlanCloseHandle(temphandle)
+    bssid_now = get_current_net_bssid(net)
+    net["network"].isCurrent = str(bssid_now == net["network"].bssid)
     print "".join(["{0:>2} ",
                    "{2.isCurrent:^3.3}",
                    "{3:^3.3} ",

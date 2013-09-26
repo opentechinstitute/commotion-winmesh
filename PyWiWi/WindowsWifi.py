@@ -341,8 +341,13 @@ def queryInterface(wireless_interface, opcode_item):
     """
     handle = WlanOpenHandle()
     opcode_item = "".join(["wlan_intf_opcode_", opcode_item])
+    for key, val in WLAN_INTF_OPCODE_DICT.items():
+        if val == opcode_item:
+            opcode = WLAN_INTF_OPCODE(key)
+            break
     result = WlanQueryInterface(handle,
                                 wireless_interface.guid,
-                                opcode_item)
+                                opcode)
+    WlanCloseHandle(handle)
     return result.contents
 
