@@ -15,6 +15,8 @@ commotion_BSSID = '12:CA:FF:EE:BA:BE' # shows up in a few Commotion places
 commotion_SSID = 'commotion-wireless.net'
 commotion_profile_name = 'commotion-wireless.net'
 commotion_profile_path = "commotion_wireless_profile.xml"
+profile_template_path = "profile_template.xml.py"
+arbitrary_profile_path = "arbitrary_profile.xml"
 
 WMI = wmi.WMI()
 
@@ -37,6 +39,22 @@ except ImportError:
         sys.path.insert(0, cmd_subfolder)
     import WindowsWifi as PyWiWi
     import WindowsNativeWifiApi as PWWnw
+
+def load_profile_template(path):
+    with open(path, "r") as f_profile:
+        profile_template = "".join(line.rstrip() for line in f_profile)
+    return profile_template
+
+def write_profile_xml(path, profile):
+    with open(path, "w") as f_profile:
+        f_profile.write(profile)
+
+def make_profile(path, params):
+    print "making profile"
+    print params
+    template = load_profile_template(profile_template_path)
+    profile = template.format(**params)
+    write_profile_xml(path, profile)
 
 def bssid_struct_to_string(dot11Bssid):
     return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
@@ -74,55 +92,40 @@ for iface in wmi_ifaces:
 def get_netsh_name(pywiwi_iface):
     return ifaces_by_guid[str(pywiwi_iface.guid)].NetConnectionID
 
-def netsh_add_profile():
+def netsh_add_profile(path):
     subprocess.call("".join(["netsh wlan add profile",
                              " filename=\"",
-                             commotion_profile_path,
+                             path,
                              "\""]))
 
-def netsh_connect(netsh_name):
+def netsh_connect(netsh_spec):
     subprocess.call("".join(["netsh wlan connect",
                              " name=\"",
-                             commotion_profile_name,
+                             netsh_spec["profile_name"],
                              "\" interface=\"",
-                             netsh_name,
+                             netsh_spec["iface_name"],
                              "\""]))
 
-def start_olsrd(netsh_name):
+def start_olsrd(iface_name):
     subprocess.call("".join(["olsrd.exe",
                              " -d 2",
                              " -i \"",
-                             netsh_name,
+                             iface_name,
                              "\" -f olsrd.conf"]))
 
-def join_network(target_net):
-    target_guid = str(target["interface"].guid)
-    target_net["interface"].netsh_name = get_netsh_name(target_net["interface"])
-    # TODO:
-
-def make_network():
-    # pick an interface to use
-    print "#   Interface"
-    idx = 0
-    for iface in ifaces:
-        print "".join(["{0:>2} ",
-                       "{1.description}"]).format(idx+1, iface)
-        idx = 1 + idx
-    iface_choice = raw_input("Enter the # of the interface to use:\n")
-    target_iface = ifaces[int(iface_choice)-1]
-    target_iface.netsh_name = get_netsh_name(target_iface)
-    # add a profile for commotion
+def make_network(netsh_spec):
+    # create a profile for this spec
+    make_profile(arbitrary_profile_path, netsh_spec)
+    # add a profile
     # if this profile already exists, it will not be added again
-    netsh_add_profile()
+    netsh_add_profile(arbitrary_profile_path)
     # connect to the network
-    netsh_connect(target_iface.netsh_name)
-    print "do we advertise commotion bssid?", iface_has_commotion(target_iface)
-    raw_input('press enter to continue')
+    netsh_connect(netsh_spec)
     # start olsrd
-    start_olsrd(target_iface.netsh_name)
-    hold_and_finish(target_iface.netsh_name)
+    start_olsrd(netsh_spec["iface_name"])
+    hold_and_finish(netsh_spec["iface_name"])
 
-def hold_and_finish(netsh_name):
+def hold_and_finish(netsh_spec):
     # stay connected until done
     holdup = ''
     while holdup != '!':
@@ -131,56 +134,70 @@ def hold_and_finish(netsh_name):
     #PyWiWi.disconnect(target_net["interface"])
     subprocess.call("".join(["netsh wlan disconnect",
                              " interface=\"",
-                             netsh_name,
+                             netsh_spec["iface_name"],
                              "\""]))
     # show current info for adapter
     # go back to old configuration when ready
-    delete_profile = raw_input("Delete Commotion Wireless profile? (Y|N)\n")
+    delete_profile = raw_input("Delete this wireless profile? (Y|N)\n")
     if delete_profile == 'Y':
         subprocess.call("".join(["netsh wlan delete profile",
                                  " name=\"",
-                                 commotion_profile_name,
+                                 netsh_spec["profile_name"],
                                  "\" interface=\"",
-                                 netsh_name,
+                                 netsh_spec["iface_name"],
                                  "\""]))
 
-#with open(commotion_profile_path, "r") as f_profile:
-    #commotion_wlan_profile_xml = "".join(line.rstrip() for line in f_profile)
+def cli_choose_network(net_list):
+    net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
+    print "#   @ CW? Interface     Qual BSSID             SSID"
+    for idx, net in enumerate(net_list):
+        isCurrent = str(net["interface"].initial_net == net["network"].bssid)
+        print "".join(["{0:>2} ",
+                       "{4:^3.1}",
+                       "{3:^3.3} ",
+                       "{1.description:13.13} ",
+                       "{2.link_quality:>3}% ",
+                       "{2.bssid} ",
+                       "{2.ssid}"]).format(idx+1,
+                                           net["interface"],
+                                           net["network"],
+                                           net["commotion"],
+                                           isCurrent)
+    return int(raw_input("".join(["Enter the # of the network to join,\n",
+                               "enter 0 (zero) to start a new network,\n",
+                               "or enter Q to quit:\n"])))
 
-# choose desired network
-net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
-print "#   @ CW? Interface     Qual BSSID             SSID"
-for idx, net in enumerate(net_list):
-    isCurrent = str(net["interface"].initial_net == net["network"].bssid)
-    print "".join(["{0:>2} ",
-                   "{4:^3.1}",
-                   "{3:^3.3} ",
-                   "{1.description:13.13} ",
-                   "{2.link_quality:>3}% ",
-                   "{2.bssid} ",
-                   "{2.ssid}"]).format(idx+1,
-                                       net["interface"],
-                                       net["network"],
-                                       net["commotion"],
-                                       isCurrent)
-net_choice = raw_input("".join(["Enter the # of the network to join,\n",
-                           "enter 0 (zero) to start a new network,\n",
-                           "or enter Q to quit:\n"]))
+def make_netsh_spec(iface, ssid):
+    return {"profile_name": ssid,
+            "ssid_hex": ssid.encode('hex').upper(),
+            "ssid_name": ssid,
+            "iface_name": get_netsh_name(iface)}
 
-print net_list[int(net_choice)-1]["interface"].initial_net
-print "Selected interface is connected to ^"
-#exit()
+def cli_choose_iface(ifaces):
+    print "#   Interface"
+    idx = 0
+    for iface in ifaces:
+        print "".join(["{0:>2} ",
+                       "{1.description}"]).format(idx+1, iface)
+        idx = 1 + idx
+    iface_choice = raw_input("Enter the # of the interface to use:\n")
+    return ifaces[int(iface_choice)-1]
 
-# FIXME:
-# TODO:
-# Everybody always chooses 0, because not done
-net_choice = 0
+net_choice = cli_choose_network(net_list)
+print "net_choice", net_choice
 if net_choice > 0 and net_choice <= len(net_list):
+    print "join existing network"
     # join an existing network
-    target_net = net_list[int(choice-1)]
-    join_network(target_net)
+    target_net = net_list[net_choice-1]
+    netsh_spec = make_netsh_spec(target_net["interface"],
+                                 target_net["network"].ssid)
+    make_network(netsh_spec)
 elif net_choice == 0:
-    make_network()
+    print "make new network"
+    # start pseudo-commotion network (bad bssid)
+    target_iface = cli_choose_iface(ifaces)
+    netsh_spec = make_netsh_spec(target_iface, commotion_SSID)
+    make_network(netsh_spec)
 else:
     exit()
 # connect to chosen network

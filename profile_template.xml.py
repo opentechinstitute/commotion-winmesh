@@ -3,8 +3,8 @@
 	<name>{profile_name}</name>
 	<SSIDConfig>
 		<SSID>
-			<hex>{ssid_hex}</hex>
-			<name>{ssid_name}</name>
+                        <hex>{ssid_hex}</hex>
+                        <name>{ssid_name}</name>
 		</SSID>
 		<nonBroadcast>false</nonBroadcast>
 	</SSIDConfig>
