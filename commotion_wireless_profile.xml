@@ -3,7 +3,7 @@
 	<name>commotion-wireless.net</name>
 	<SSIDConfig>
 		<SSID>
-			<hex>636F6D6D6F74696F6E2D6D616E75616C</hex>
+			<hex>636F6D6D6F74696F6E2D776972656C6573732E6E6574</hex>
 			<name>commotion-wireless.net</name>
 		</SSID>
 		<nonBroadcast>false</nonBroadcast>
