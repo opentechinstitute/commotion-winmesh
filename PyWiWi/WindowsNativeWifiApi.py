@@ -756,8 +756,56 @@ WLAN_OPCODE_VALUE_TYPE_DICT = {
     3: "wlan_opcode_value_type_invalid"
 }
 
+class WLAN_ASSOCIATION_ATTRIBUTES(Structure):
+    """
+    """
+    _fields_ = [("dot11Ssid", DOT11_SSID),
+                ("dot11BssType", DOT11_BSS_TYPE),
+                ("dot11Bssid", DOT11_MAC_ADDRESS),
+                ("dot11PhyType", DOT11_PHY_TYPE),
+                ("uDot11PhyIndex", c_ulong),
+                ("wlanSignalQuality", WLAN_SIGNAL_QUALITY),
+                ("ulRxRate", c_ulong),
+                ("ulTxRate", c_ulong)]
+
+class WLAN_SECURITY_ATTRIBUTES(Structure):
+    """
+    """
+    _fields_ = [("bSecurityEnabled", BOOL),
+                ("bOneXEnabled", BOOL),
+                ("dot11AuthAlgorithm", DOT11_AUTH_ALGORITHM_TYPE),
+                ("dot11CipherAlgorithm", DOT11_CIPHER_ALGORITHM_TYPE)]
+
+class WLAN_CONNECTION_ATTRIBUTES(Structure):
+    """
+        The WlanQueryInterface function queries various parameters of a
+        specified interface.
+
+        typedef struct _WLAN_CONNECTION_ATTRIBUTES {
+          WLAN_INTERFACE_STATE        isState;
+          WLAN_CONNECTION_MODE        wlanConnectionMode;
+          WCHAR                       strProfileName[256];
+          WLAN_ASSOCIATION_ATTRIBUTES wlanAssociationAttributes;
+          WLAN_SECURITY_ATTRIBUTES    wlanSecurityAttributes;
+        } WLAN_CONNECTION_ATTRIBUTES, *PWLAN_CONNECTION_ATTRIBUTES;
+    """
+    _fields_ = [("isState", WLAN_INTERFACE_STATE),
+                ("wlanConnectionMode", WLAN_CONNECTION_MODE),
+                ("strProfileName", c_wchar * 256),
+                ("wlanAssociationAttributes", WLAN_ASSOCIATION_ATTRIBUTES),
+                ("wlanSecurityAttributes", WLAN_SECURITY_ATTRIBUTES)]
+
 def WlanQueryInterface(hClientHandle, pInterfaceGuid, OpCode):
     """
+        DWORD WINAPI WlanQueryInterface(
+          _In_        HANDLE hClientHandle,
+          _In_        const GUID *pInterfaceGuid,
+          _In_        WLAN_INTF_OPCODE OpCode,
+          _Reserved_  PVOID pReserved,
+          _Out_       PDWORD pdwDataSize,
+          _Out_       PVOID *ppData,
+          _Out_opt_   PWLAN_OPCODE_VALUE_TYPE pWlanOpcodeValueType
+        );
     """
     func_ref = wlanapi.WlanQueryInterface
     func_ref.argtypes = [HANDLE,
@@ -768,8 +816,17 @@ def WlanQueryInterface(hClientHandle, pInterfaceGuid, OpCode):
                          POINTER(POINTER(WLAN_CONNECTION_ATTRIBUTES)),
                          POINTER(WLAN_OPCODE_VALUE_TYPE)]
     func_ref.restype = DWORD
-    result = func_ref(hClientHandle, byref(pInterfaceGuid), OpCode)
+    pdwDataSize = DWORD()
+    ppData = pointer(WLAN_CONNECTION_ATTRIBUTES())
+    pWlanOpcodeValueType = WLAN_OPCODE_VALUE_TYPE()
+    result = func_ref(hClientHandle,
+                      byref(pInterfaceGuid),
+                      OpCode,
+                      None,
+                      pdwDataSize,
+                      ppData,
+                      pWlanOpcodeValueType)
     if result != ERROR_SUCCESS:
         raise Exception("WlanQueryInterface failed.")
-    return result
+    return ppData
 

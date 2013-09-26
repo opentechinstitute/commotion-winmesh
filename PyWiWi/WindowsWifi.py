@@ -341,5 +341,8 @@ def queryInterface(wireless_interface, opcode_item):
     """
     handle = WlanOpenHandle()
     opcode_item = "".join(["wlan_intf_opcode_", opcode_item])
-    return WlanQueryInterface(handle, wireless_interface.guid, opcode_item)
+    result = WlanQueryInterface(handle,
+                                wireless_interface.guid,
+                                opcode_item)
+    return result.contents
 
