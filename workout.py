@@ -20,24 +20,25 @@ WMI = wmi.WMI()
 
 # http://stackoverflow.com/questions/279237/import-a-module-from-a-folder
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(
-		inspect.currentframe()
-))[0]))
+		              inspect.currentframe()))[0]))
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
 # Import from subdirectories. (__init__.py works in some envs, not others)
 try:
     import WindowsWifi as PyWiWi
+    import WindowsNativeWifiApi as PWWnw
 except ImportError:
-    print "Enumerating interfaces..."
+    print "Enumerating interfaces..." # sneaky indicator
     cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(
                     inspect.getfile(inspect.currentframe()
     ))[0], "PyWiWi")))
     if cmd_subfolder not in sys.path:
         sys.path.insert(0, cmd_subfolder)
     import WindowsWifi as PyWiWi
+    import WindowsNativeWifiApi as PWWnw
 
-# scan for existing Commotion wireless networks
+# collect existing networks on wireless interfaces
 ifaces = PyWiWi.getWirelessInterfaces()
 net_list = []
 for iface in ifaces:
@@ -49,7 +50,7 @@ for iface in ifaces:
                                       commotion_BSSID) else
                                       "-"})
 
-# WMI is the best way to get interface "common name" for netsh, etc.
+# get interface "common name" for netsh, etc.
 wmi_ifaces = wmi.WMI().Win32_NetworkAdapter()
 ifaces_by_guid = {}
 for iface in wmi_ifaces:
@@ -135,9 +136,18 @@ def hold_and_finish(netsh_name):
 
 # choose desired network
 net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
-print "#  CW? Interface     Qual BSSID             SSID"
+print "#   @ CW? Interface     Qual BSSID             SSID"
 for idx, net in enumerate(net_list):
+    temphandle = PWWnw.WlanOpenHandle()
+    a = PyWiWi.WlanQueryInterface(temphandle,
+                                                net["interface"].guid,
+                                                PWWnw.WLAN_INTF_OPCODE(7))
+    b = a.contents.wlanAssociationAttributes.dot11Bssid
+    c = ":".join(map(lambda x: "%02X" % x, b))
+    net["network"].isCurrent = str(c == net["network"].bssid)
+    PWWnw.WlanCloseHandle(temphandle)
     print "".join(["{0:>2} ",
+                   "{2.isCurrent:^3.3}",
                    "{3:^3.3} ",
                    "{1.description:13.13} ",
                    "{2.link_quality:>3}% ",
@@ -149,6 +159,11 @@ for idx, net in enumerate(net_list):
 net_choice = raw_input("".join(["Enter the # of the network to join,\n",
                            "enter 0 (zero) to start a new network,\n",
                            "or enter Q to quit:\n"]))
+
+print net_list[int(net_choice)-1]["interface"].initial_net
+print "Selected interface is connected to ^"
+exit()
+
 # FIXME:
 # TODO:
 # Everybody always chooses 0, because not done
