@@ -28,40 +28,34 @@ if cmd_folder not in sys.path:
 
 # Import from subdirectories. (__init__.py works in some envs, not others)
 try:
-    import WindowsWifi as PyWiWi
-    import WindowsNativeWifiApi as PWWnw
+    import PyWiWi.WindowsWifi as WindowsWifi
+    import PyWiWi.WindowsNativeWifiApi as PWWnw
 except ImportError:
-    print "Enumerating interfaces..." # sneaky indicator
     cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(
                     inspect.getfile(inspect.currentframe()
     ))[0], "PyWiWi")))
     if cmd_subfolder not in sys.path:
         sys.path.insert(0, cmd_subfolder)
-    import WindowsWifi as PyWiWi
-    import WindowsNativeWifiApi as PWWnw
-
-def load_profile_template(path):
-    with open(path, "r") as f_profile:
-        profile_template = "".join(line.rstrip() for line in f_profile)
-    return profile_template
-
-def write_profile_xml(path, profile):
-    with open(path, "w") as f_profile:
-        f_profile.write(profile)
+    import PyWiWi.WindowsWifi as WindowsWifi
+    import PyWiWi.WindowsNativeWifiApi as PWWnw
 
 def make_profile(path, params):
-    print "making profile"
-    print params
+    def load_profile_template(path):
+        with open(path, "r") as f_profile:
+            profile_template = "".join(line.rstrip() for line in f_profile)
+        return profile_template
+    def write_profile_xml(path, profile):
+        with open(path, "w") as f_profile:
+            f_profile.write(profile)
     template = load_profile_template(profile_template_path)
     profile = template.format(**params)
     write_profile_xml(path, profile)
 
-def bssid_struct_to_string(dot11Bssid):
-    return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
-
 def get_current_net_bssid(PyWiWi_iface):
+    def bssid_struct_to_string(dot11Bssid):
+        return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
     try:
-        cnx = PyWiWi.queryInterface(PyWiWi_iface, 'current_connection')
+        cnx = WindowsWifi.queryInterface(PyWiWi_iface, 'current_connection')
         bssid = bssid_struct_to_string(cnx.wlanAssociationAttributes.dot11Bssid)
     except:
         bssid = ""
@@ -71,26 +65,24 @@ def iface_has_commotion(PyWiWi_iface):
     return commotion_BSSID == get_current_net_bssid(PyWiWi_iface)
 
 # collect existing networks on wireless interfaces
-ifaces = PyWiWi.getWirelessInterfaces()
-net_list = []
-for iface in ifaces:
-    iface.initial_net = get_current_net_bssid(iface)
-    networks = PyWiWi.getWirelessNetworkBssList(iface)
-    for network in networks:
-        net_list.append({"interface": iface,
+def collect_networks():
+    ifaces = WindowsWifi.getWirelessInterfaces()
+    # prepare to get each interface's "common name" for netsh
+    wmi_ifaces = wmi.WMI().Win32_NetworkAdapter()
+    ifaces_by_guid = {}
+    for wmi_iface in wmi_ifaces:
+        ifaces_by_guid[wmi_iface.GUID] = wmi_iface
+    # collect networks and useful metadata
+    nets = []
+    for iface in ifaces:
+        iface.initial_net = get_current_net_bssid(iface)
+        iface.netsh_name = ifaces_by_guid[str(iface.guid)].NetConnectionID
+        networks = WindowsWifi.getWirelessNetworkBssList(iface)
+        for network in networks:
+            nets.append({"interface": iface,
                          "network": network,
-                         "commotion": "+" if (network.bssid ==
-                                      commotion_BSSID) else
-                                      "-"})
-
-# get interface "common name" for netsh, etc.
-wmi_ifaces = wmi.WMI().Win32_NetworkAdapter()
-ifaces_by_guid = {}
-for iface in wmi_ifaces:
-    ifaces_by_guid[iface.GUID] = iface
-
-def get_netsh_name(pywiwi_iface):
-    return ifaces_by_guid[str(pywiwi_iface.guid)].NetConnectionID
+                         "commotion": network.bssid == commotion_BSSID})
+    return nets
 
 def netsh_add_profile(path):
     subprocess.call("".join(["netsh wlan add profile",
@@ -131,7 +123,7 @@ def hold_and_finish(netsh_spec):
     while holdup != '!':
         holdup = raw_input("Enter ! to disconnect\n")
     # disconnect from current network
-    #PyWiWi.disconnect(target_net["interface"])
+    #WindowsWifi.disconnect(target_net["interface"])
     subprocess.call("".join(["netsh wlan disconnect",
                              " interface=\"",
                              netsh_spec["iface_name"],
@@ -147,11 +139,13 @@ def hold_and_finish(netsh_spec):
                                  netsh_spec["iface_name"],
                                  "\""]))
 
-def cli_choose_network(net_list):
-    net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
+def print_available_networks():
+    global net_list
+    if net_list is None: refresh_net_list()
+    #net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
     print "#   @ CW? Interface     Qual BSSID             SSID"
     for idx, net in enumerate(net_list):
-        isCurrent = str(net["interface"].initial_net == net["network"].bssid)
+        isCurrent = net["interface"].initial_net == net["network"].bssid
         print "".join(["{0:>2} ",
                        "{4:^3.1}",
                        "{3:^3.3} ",
@@ -161,8 +155,11 @@ def cli_choose_network(net_list):
                        "{2.ssid}"]).format(idx+1,
                                            net["interface"],
                                            net["network"],
-                                           net["commotion"],
-                                           isCurrent)
+                                           str(net["commotion"]),
+                                           str(isCurrent))
+
+def cli_choose_network():
+    print_available_networks()
     return int(raw_input("".join(["Enter the # of the network to join,\n",
                                "enter 0 (zero) to start a new network,\n",
                                "or enter Q to quit:\n"])))
@@ -171,7 +168,7 @@ def make_netsh_spec(iface, ssid):
     return {"profile_name": ssid,
             "ssid_hex": ssid.encode('hex').upper(),
             "ssid_name": ssid,
-            "iface_name": get_netsh_name(iface)}
+            "iface_name": iface.netsh_name}
 
 def cli_choose_iface(ifaces):
     print "#   Interface"
@@ -183,17 +180,20 @@ def cli_choose_iface(ifaces):
     iface_choice = raw_input("Enter the # of the interface to use:\n")
     return ifaces[int(iface_choice)-1]
 
-net_choice = cli_choose_network(net_list)
-print "net_choice", net_choice
+net_list = None
+def refresh_net_list():
+    global net_list
+    net_list = collect_networks()
+    net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
+
+net_choice = cli_choose_network()
 if net_choice > 0 and net_choice <= len(net_list):
-    print "join existing network"
     # join an existing network
     target_net = net_list[net_choice-1]
     netsh_spec = make_netsh_spec(target_net["interface"],
                                  target_net["network"].ssid)
     make_network(netsh_spec)
 elif net_choice == 0:
-    print "make new network"
     # start pseudo-commotion network (bad bssid)
     target_iface = cli_choose_iface(ifaces)
     netsh_spec = make_netsh_spec(target_iface, commotion_SSID)
@@ -210,4 +210,4 @@ else:
         ## bssType must match type from profile provided
         #"bssType": target_net["network"].bss_type,
         #"flags": 0}
-#PyWiWi.connect(target_net["interface"], cnxp)
+#WindowsWifi.connect(target_net["interface"], cnxp)
