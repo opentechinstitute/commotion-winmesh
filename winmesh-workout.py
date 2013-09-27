@@ -97,14 +97,14 @@ def netsh_connect(netsh_spec):
                              "\" interface=\"",
                              netsh_spec["iface_name"],
                              "\""]))
-
 # FIXME needs to return a handle to the process
 def start_olsrd(iface_name):
-    subprocess.call("".join(["olsrd.exe",
+#    proc = subprocess.Popen("ls ../", shell = True,stdout=subrocess.PIPE)
+    return subprocess.Popen("".join(["olsrd.exe",
                              " -d 2",
                              " -i \"",
                              iface_name,
-                             "\" -f olsrd.conf"]))
+                             "\" -f olsrd.conf"]), stdout=subprocess.PIPE)
 
 def make_network(netsh_spec):
     # create a profile for this spec
