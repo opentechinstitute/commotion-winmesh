@@ -159,8 +159,8 @@ def print_available_networks():
                                            str(net["commotion"]),
                                            str(isCurrent))
 
-def cli_choose_network(net_list):
-    print_available_networks(net_list)
+def cli_choose_network():
+    print_available_networks()
     return int(raw_input("".join(["Enter the # of the network to join,\n",
                                "enter 0 (zero) to start a new network,\n",
                                "or enter Q to quit:\n"])))
