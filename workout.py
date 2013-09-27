@@ -62,7 +62,7 @@ def netsh_add_and_connect_cmd(netsh_spec):
                               netsh_batch_path,
                               netsh_spec)
     # run the batch file
-    subprocess.Popen(netsh_batch_path)
+    return subprocess.Popen(netsh_batch_path, stdout=subprocess.PIPE)
 
 def get_current_net_bssid(PyWiWi_iface):
     def bssid_struct_to_string(dot11Bssid):
@@ -131,17 +131,9 @@ def start_olsrd(iface_name):
     return subprocess.Popen(start_olsrd_cmd(iface_name), stdout=subprocess.PIPE)
 
 def make_network(netsh_spec):
-    # create a profile for this spec
     make_profile(netsh_spec)
-    # add a profile
-    # if this profile already exists, it will not be added again
-    #netsh_add_profile(arbitrary_profile_path)
-    # connect to the network
-    #netsh_connect(netsh_spec)
-    netsh_add_and_connect_cmd(netsh_spec)
-    # start olsrd
-    start_olsrd(netsh_spec["iface_name"])
-
+    netsh_add_and_connect_cmd(netsh_spec) # now starts olsrd too
+    #start_olsrd(netsh_spec["iface_name"])
 
 def holdup():
     # stay connected until done
