@@ -16,21 +16,24 @@ class OlsrdThread(threading.Thread):
     def __init__(self):#, proc):
         threading.Thread.__init__(self)
         #self.olsr_proc = proc
+        self.stop = False
+        self.i = 0
 
     def run(self):
         while True:
-            self.get_json_info()
-            print "next JSONInfo refresh in 10 seconds..."
-            time.sleep(10)
+            if self.i % 10 == 0: 
+                self.get_json_info()
+                print "next JSONInfo refresh in 10 seconds..."
+            self.i += 1
+            if self.stop: 
+                print "time to stop olsrd watch thread..."
+                break
+            time.sleep(1)
 
     def get_json_info(self):
         url = "http://localhost:9090/"
         f = urllib.urlopen(url)
         print f.read()
-
-    def die(self):
-        self.exit()
-
 
 class ConsoleOutput:  
     def __init__(self, source, console):
@@ -77,6 +80,7 @@ class WinMeshUI:
             # TODO start olsrd process watchdog thread
             # TODO start olsrd.jsoninfo plugin poller thread
             self.olsrd_thread = OlsrdThread()
+            self.olsrd_thread.setDaemon(True)
             self.olsrd_thread.start()
         else:
             button.set_label(strings.TOGGLE_TEXT_START)
@@ -86,6 +90,11 @@ class WinMeshUI:
         try: 
             self.olsr_proc.kill()
         except:
+            pass
+
+        try: 
+            self.olsrd_thread.stop = True
+        except: 
             pass
 
     def write_to_buffer(self, fd, condition):
@@ -100,10 +109,6 @@ class WinMeshUI:
 
 
     def shutdown(self):
-        #try: 
-        self.olsrd_thread.die() 
-        #except: 
-        #    pass
         self.kill_olsrd()
         #workout.shutdown_and_cleanup_network_gui()
 
@@ -163,7 +168,7 @@ class WinMeshUI:
 
         self.entryNetworkId = gtk.Entry(max=2)
         vbox.pack_start(self.entryNetworkId, False, False, 0)
-        self.entryNetworkId.set_text("11") # FIXME default to 11 for now
+        self.entryNetworkId.set_text("15") # FIXME default for testing
         self.entryNetworkId.show()
 
 
