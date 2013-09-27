@@ -1,4 +1,5 @@
 import os
+import io
 import sys
 import inspect
 #import win32com.shell.shell as shell
@@ -17,6 +18,8 @@ commotion_profile_name = 'commotion-wireless.net'
 commotion_profile_path = "commotion_wireless_profile.xml"
 profile_template_path = "profile_template.xml.py"
 arbitrary_profile_path = "arbitrary_profile.xml"
+netsh_add_connect_template_path = "netsh_add_connect.bat.py"
+netsh_batch_path = "netsh_add_connect.bat"
 
 WMI = wmi.WMI()
 
@@ -36,20 +39,30 @@ except ImportError:
     ))[0], "PyWiWi")))
     if cmd_subfolder not in sys.path:
         sys.path.insert(0, cmd_subfolder)
-    import PyWiWi.WindowsWifi as WindowsWifi
-    import PyWiWi.WindowsNativeWifiApi as PWWnw
+    import WindowsWifi as WindowsWifi
+    import WindowsNativeWifiApi as PWWnw
+
+def create_file_from_template(template_path, result_path, params):
+    def load_template(template_path):
+        with io.open(template_path, mode="r", newline="\r\n") as f:
+            return "".join(line.rstrip() for line in f)
+    def write_file(result_path, filestring):
+        with io.open(result_path, mode="w", newline="\r\n") as f:
+            f.write(unicode(filestring))
+    template = load_template(template_path)
+    write_file(result_path, template.format(**params))
 
 def make_profile(path, params):
-    def load_profile_template(path):
-        with open(path, "r") as f_profile:
-            profile_template = "".join(line.rstrip() for line in f_profile)
-        return profile_template
-    def write_profile_xml(path, profile):
-        with open(path, "w") as f_profile:
-            f_profile.write(profile)
-    template = load_profile_template(profile_template_path)
-    profile = template.format(**params)
-    write_profile_xml(path, profile)
+    create_file_from_template(profile_template_path,
+                              path,
+                              params)
+
+def netsh_add_and_connect_cmd(netsh_spec):
+    create_file_from_template(netsh_add_connect_template_path,
+                              netsh_batch_path,
+                              netsh_spec)
+    # run the batch file
+    subprocess.Popen(netsh_batch_path)
 
 def get_current_net_bssid(PyWiWi_iface):
     def bssid_struct_to_string(dot11Bssid):
@@ -84,60 +97,101 @@ def collect_networks():
                          "commotion": network.bssid == commotion_BSSID})
     return nets
 
-def netsh_add_profile(path):
-    subprocess.call("".join(["netsh wlan add profile",
+def netsh_add_profile_cmd(path):
+    return "".join(["netsh wlan add profile",
                              " filename=\"",
                              path,
-                             "\""]))
+                             "\""])
 
-def netsh_connect(netsh_spec):
-    subprocess.call("".join(["netsh wlan connect",
+# FIXME do we need to capture stderr?
+def netsh_add_profile(path):
+    subprocess.call(netsh_add_profile_cmd(path))
+
+def netsh_connect_cmd(netsh_spec):
+    return "".join(["netsh wlan connect",
                              " name=\"",
                              netsh_spec["profile_name"],
                              "\" interface=\"",
                              netsh_spec["iface_name"],
-                             "\""]))
+                             "\""])
 
-def start_olsrd(iface_name):
-    subprocess.call("".join(["olsrd.exe",
+# FIXME do we need to capture stderr?
+def netsh_connect(netsh_spec):
+    subprocess.call(netsh_connect_cmd(netsh_spec))
+
+def start_olsrd_cmd(iface_name):
+    return "".join(["olsrd.exe",
                              " -d 2",
                              " -i \"",
                              iface_name,
-                             "\" -f olsrd.conf"]))
+                             "\" -f olsrd.conf"])
+
+# FIXME needs to return a handle to the process
+def start_olsrd(iface_name):
+    return subprocess.Popen(start_olsrd_cmd(iface_name), stdout=subprocess.PIPE)
 
 def make_network(netsh_spec):
     # create a profile for this spec
     make_profile(arbitrary_profile_path, netsh_spec)
     # add a profile
     # if this profile already exists, it will not be added again
-    netsh_add_profile(arbitrary_profile_path)
+    #netsh_add_profile(arbitrary_profile_path)
     # connect to the network
-    netsh_connect(netsh_spec)
+    #netsh_connect(netsh_spec)
+    netsh_add_and_connect_cmd(netsh_spec)
     # start olsrd
     start_olsrd(netsh_spec["iface_name"])
-    hold_and_finish(netsh_spec["iface_name"])
 
-def hold_and_finish(netsh_spec):
+
+def holdup():
     # stay connected until done
     holdup = ''
     while holdup != '!':
         holdup = raw_input("Enter ! to disconnect\n")
-    # disconnect from current network
-    #WindowsWifi.disconnect(target_net["interface"])
-    subprocess.call("".join(["netsh wlan disconnect",
+
+def shutdown_and_cleanup_network_cmd(netsh_spec):
+    return "".join(["netsh wlan disconnect",
                              " interface=\"",
                              netsh_spec["iface_name"],
-                             "\""]))
-    # show current info for adapter
-    # go back to old configuration when ready
-    delete_profile = raw_input("Delete this wireless profile? (Y|N)\n")
-    if delete_profile == 'Y':
-        subprocess.call("".join(["netsh wlan delete profile",
+                             "\""])
+
+def shutdown_and_cleanup_network_cmd2(netsh_spec):
+    return "".join(["netsh wlan delete profile",
                                  " name=\"",
                                  netsh_spec["profile_name"],
                                  "\" interface=\"",
                                  netsh_spec["iface_name"],
-                                 "\""]))
+                                 "\""])
+
+def shutdown_and_cleanup_network(netsh_spec):
+    # disconnect from current network
+    #WindowsWifi.disconnect(target_net["interface"])
+    subprocess.call(shutdown_and_cleanup_network_cmd(netsh_spec))
+
+    # show current info for adapter
+    # go back to old configuration when ready
+    subprocess.call(shutdown_and_cleanup_network_cmd2(netsh_spec))
+
+
+def shutdown_and_cleanup_network_gui():
+    refresh_net_list()
+    if idx > 0 and idx <= len(net_list):
+        # join an existing network
+        target_net = net_list[idx-1]
+        netsh_spec = make_netsh_spec(target_net["interface"],
+                                     target_net["network"].ssid)
+    shutdown_and_cleanup_network(netsh_spec["iface_name"])
+
+def shutdown_and_cleanup_network_cli(netsh_spec):
+    # disconnect from current network
+    #WindowsWifi.disconnect(target_net["interface"])
+    subprocess.call(shutdown_and_cleanup_network_cmd(netsh_spec))
+
+    # show current info for adapter
+    # go back to old configuration when ready
+    delete_profile = raw_input("Delete this wireless profile? (Y|N)\n")
+    if delete_profile == 'Y':
+        subprocess.call(shutdown_and_cleanup_network_cmd2(netsh_spec))
 
 def print_available_networks():
     global net_list
@@ -186,20 +240,57 @@ def refresh_net_list():
     net_list = collect_networks()
     net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
 
-net_choice = cli_choose_network()
-if net_choice > 0 and net_choice <= len(net_list):
-    # join an existing network
-    target_net = net_list[net_choice-1]
-    netsh_spec = make_netsh_spec(target_net["interface"],
-                                 target_net["network"].ssid)
-    make_network(netsh_spec)
-elif net_choice == 0:
-    # start pseudo-commotion network (bad bssid)
-    target_iface = cli_choose_iface(ifaces)
-    netsh_spec = make_netsh_spec(target_iface, commotion_SSID)
-    make_network(netsh_spec)
-else:
-    exit()
+def get_ssid_from_net_list(idx):
+    global net_list
+    if net_list is None: refresh_net_list()
+    return net_list[idx]["network"]["SSID"]
+
+def connect_or_start_network(idx):
+    refresh_net_list()
+    if idx > 0 and idx <= len(net_list):
+        # join an existing network
+        target_net = net_list[idx-1]
+        netsh_spec = make_netsh_spec(target_net["interface"],
+                                     target_net["network"].ssid)
+        make_network(netsh_spec)
+    #elif idx == 0:
+    #    # start pseudo-commotion network (bad bssid)
+    #    target_iface = cli_choose_iface(ifaces)
+    #    netsh_spec = make_netsh_spec(target_iface, commotion_SSID)
+    #    make_network(netsh_spec)
+
+if __name__=="__main__":
+    refresh_net_list()
+    net_choice = cli_choose_network()
+    if net_choice > 0 and net_choice <= len(net_list):
+        # join an existing network
+        target_net = net_list[net_choice-1]
+        netsh_spec = make_netsh_spec(target_net["interface"],
+                                     target_net["network"].ssid)
+        make_network(netsh_spec)
+        holdup() # pause waiting for the kill key
+        shutdown_and_cleanup_network_cli(netsh_spec["iface_name"])
+    elif net_choice == 0:
+        # start pseudo-commotion network (bad bssid)
+
+        # FIXME a bunch of code badly ripped from collect_networks()
+        wmi_ifaces = wmi.WMI().Win32_NetworkAdapter()
+        ifaces = WindowsWifi.getWirelessInterfaces()
+        ifaces_by_guid = {}
+        for wmi_iface in wmi_ifaces:
+            ifaces_by_guid[wmi_iface.GUID] = wmi_iface
+
+        for iface in ifaces:
+            iface.initial_net = get_current_net_bssid(iface)
+            iface.netsh_name = ifaces_by_guid[str(iface.guid)].NetConnectionID
+        # FIXME /a bunch of code badly ripped from collect_networks()
+
+        target_iface = cli_choose_iface(ifaces)
+        netsh_spec = make_netsh_spec(target_iface, commotion_SSID)
+        make_network(netsh_spec)
+    else:   
+        exit()
+
 # connect to chosen network
 # http://msdn.microsoft.com/en-us/library/windows/desktop/ms706851(v=vs.85).aspx
 #cnxp = {"connectionMode": 0,
