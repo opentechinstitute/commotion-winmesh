@@ -39,12 +39,12 @@ except ImportError:
     ))[0], "PyWiWi")))
     if cmd_subfolder not in sys.path:
         sys.path.insert(0, cmd_subfolder)
-    import WindowsWifi as WindowsWifi
-    import WindowsNativeWifiApi as PWWnw
+    import PyWiWi.WindowsWifi as WindowsWifi
+    import PyWiWi.WindowsNativeWifiApi as PWWnw
 
 def create_file_from_template(template_path, result_path, params):
     def load_template(template_path):
-        with io.open(template_path, mode="r", newline="\r\n") as f:
+        with io.open(template_path, mode="rt", newline="\r\n") as f:
             return "".join(line.rstrip() for line in f)
     def write_file(result_path, filestring):
         with io.open(result_path, mode="w", newline="\r\n") as f:
@@ -52,9 +52,9 @@ def create_file_from_template(template_path, result_path, params):
     template = load_template(template_path)
     write_file(result_path, template.format(**params))
 
-def make_profile(path, params):
+def make_profile(params):
     create_file_from_template(profile_template_path,
-                              path,
+                              "".join([params["profile_name"], ".xml"]),
                               params)
 
 def netsh_add_and_connect_cmd(netsh_spec):
@@ -132,7 +132,7 @@ def start_olsrd(iface_name):
 
 def make_network(netsh_spec):
     # create a profile for this spec
-    make_profile(arbitrary_profile_path, netsh_spec)
+    make_profile(netsh_spec)
     # add a profile
     # if this profile already exists, it will not be added again
     #netsh_add_profile(arbitrary_profile_path)
@@ -202,7 +202,7 @@ def print_available_networks():
         isCurrent = net["interface"].initial_net == net["network"].bssid
         print "".join(["{0:>2} ",
                        "{4:^3.1}",
-                       "{3:^3.3} ",
+                       "{3:^3.1} ",
                        "{1.description:13.13} ",
                        "{2.link_quality:>3}% ",
                        "{2.bssid} ",
