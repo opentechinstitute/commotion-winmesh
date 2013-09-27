@@ -194,7 +194,7 @@ def get_ssid_from_net_list(idx):
 
 if __name__=="__main__":
     refresh_net_list()
-    net_choice = cli_choose_network(net_list)
+    net_choice = cli_choose_network()
     if net_choice > 0 and net_choice <= len(net_list):
         # join an existing network
         target_net = net_list[net_choice-1]
