@@ -107,7 +107,7 @@ def collect_networks():
             nets.append({"interface": iface,
                          "network": network,
                          "commotion": network.bssid == commotion_BSSID})
-    return nets
+    return nets, ifaces
 
 
 def netsh_add_profile_cmd(path):
@@ -269,7 +269,8 @@ net_list = None
 
 def refresh_net_list():
     global net_list
-    net_list = collect_networks()
+    global iface_list
+    net_list, iface_list = collect_networks()
     net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
 
 
@@ -280,19 +281,19 @@ def get_ssid_from_net_list(idx):
 
 
 def connect_or_start_network(idx):
-    refresh_net_list()
+    #refresh_net_list()
     if idx > 0 and idx <= len(net_list):
         # join an existing network
         target_net = net_list[idx - 1]
         netsh_spec = make_netsh_spec(target_net["interface"],
                                      target_net["network"].ssid)
         make_network(netsh_spec)
-        #elif idx == 0:
-        #    # start pseudo-commotion network (bad bssid)
-        #    target_iface = cli_choose_iface(ifaces)
-        #    netsh_spec = make_netsh_spec(target_iface, commotion_SSID)
-        #    make_network(netsh_spec)
-
+    elif idx == 0:
+        # start pseudo-commotion network (bad bssid)
+        #ifaces = WindowsWifi.getWirelessInterfaces()
+        target_iface = iface_list[0] #cli_choose_iface(ifaces)
+        netsh_spec = make_netsh_spec(target_iface, commotion_SSID)
+        make_network(netsh_spec)
 
 if __name__ == "__main__":
     refresh_net_list()
