@@ -68,7 +68,8 @@ def netsh_add_and_connect_cmd(netsh_spec):
                               netsh_batch_path,
                               netsh_spec)
     # run the batch file
-    return subprocess.Popen(netsh_batch_path, stdout=subprocess.PIPE)
+    netbat = subprocess.Popen(netsh_batch_path)
+    return netbat.wait()
 
 
 def get_current_net_bssid(PyWiWi_iface):
@@ -118,7 +119,8 @@ def netsh_add_profile_cmd(path):
 
 # FIXME do we need to capture stderr?
 def netsh_add_profile(path):
-    subprocess.call(netsh_add_profile_cmd(path))
+    add = subprocess.call(netsh_add_profile_cmd(path))
+    return add.wait()
 
 
 def netsh_connect_cmd(netsh_spec):
@@ -132,7 +134,8 @@ def netsh_connect_cmd(netsh_spec):
 
 # FIXME do we need to capture stderr?
 def netsh_connect(netsh_spec):
-    subprocess.call(netsh_connect_cmd(netsh_spec))
+    conn = subprocess.call(netsh_connect_cmd(netsh_spec))
+    return conn.wait()
 
 
 def start_olsrd_cmd(iface_name):
@@ -145,8 +148,9 @@ def start_olsrd_cmd(iface_name):
 
 # FIXME needs to return a handle to the process
 def start_olsrd(iface_name):
-    return subprocess.Popen(start_olsrd_cmd(iface_name),
+    start = subprocess.Popen(start_olsrd_cmd(iface_name),
                             stdout=subprocess.PIPE)
+    return start.communicate()
 
 
 def make_network(netsh_spec):
@@ -181,11 +185,13 @@ def shutdown_and_cleanup_network_cmd2(netsh_spec):
 def shutdown_and_cleanup_network(netsh_spec):
     # disconnect from current network
     #WindowsWifi.disconnect(target_net["interface"])
-    subprocess.call(shutdown_and_cleanup_network_cmd(netsh_spec))
+    sd = subprocess.call(shutdown_and_cleanup_network_cmd(netsh_spec))
+    sd.wait()
 
     # show current info for adapter
     # go back to old configuration when ready
-    subprocess.call(shutdown_and_cleanup_network_cmd2(netsh_spec))
+    sd2 = subprocess.call(shutdown_and_cleanup_network_cmd2(netsh_spec))
+    sd2.wait()
 
 
 def shutdown_and_cleanup_network_gui():
@@ -201,13 +207,15 @@ def shutdown_and_cleanup_network_gui():
 def shutdown_and_cleanup_network_cli(netsh_spec):
     # disconnect from current network
     #WindowsWifi.disconnect(target_net["interface"])
-    subprocess.call(shutdown_and_cleanup_network_cmd(netsh_spec))
+    sd = subprocess.call(shutdown_and_cleanup_network_cmd(netsh_spec))
+    sd.wait()
 
     # show current info for adapter
     # go back to old configuration when ready
     delete_profile = raw_input("Delete this wireless profile? (Y|N)\n")
     if delete_profile == 'Y':
-        subprocess.call(shutdown_and_cleanup_network_cmd2(netsh_spec))
+        sd2 = subprocess.call(shutdown_and_cleanup_network_cmd2(netsh_spec))
+        sd2.wait()
 
 
 def print_available_networks():
