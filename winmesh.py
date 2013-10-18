@@ -116,6 +116,9 @@ class WinMeshUI:
         self.shutdown()
         gtk.main_quit()
 
+    def print_directions(self):
+        print "\n\nTo join a network enter it's number below.  To create a network, enter 0 below."
+
     def probe_network(self):
         #self.net_list = workout.collect_networks()
         workout.print_available_networks()
@@ -168,7 +171,7 @@ class WinMeshUI:
 
         self.entryNetworkId = gtk.Entry(max=2)
         vbox.pack_start(self.entryNetworkId, False, False, 0)
-        self.entryNetworkId.set_text("15") # FIXME default for testing
+        self.entryNetworkId.set_text("0")
         self.entryNetworkId.show()
 
 
@@ -202,6 +205,7 @@ if __name__ == "__main__":
     #t.setDaemon(True)
     #t.start()
     app.probe_network()
+    app.print_directions()
     app.main()
     #t.stop()
 
