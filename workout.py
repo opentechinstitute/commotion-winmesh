@@ -69,7 +69,7 @@ def netsh_add_and_connect_cmd(netsh_spec):
                               netsh_spec)
     # run the batch file
     netbat = subprocess.Popen(netsh_batch_path)
-    return netbat.wait()
+    #return netbat.wait()
 
 
 def get_current_net_bssid(PyWiWi_iface):
@@ -150,7 +150,7 @@ def start_olsrd_cmd(iface_name):
 def start_olsrd(iface_name):
     start = subprocess.Popen(start_olsrd_cmd(iface_name),
                             stdout=subprocess.PIPE)
-    return start.communicate()
+    return start#.communicate()
 
 
 def make_network(netsh_spec):

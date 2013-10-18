@@ -11,6 +11,7 @@ import sys
 import time
 import strings
 import urllib
+import traceback
 
 class OlsrdThread(threading.Thread):
     def __init__(self):#, proc):
@@ -31,9 +32,12 @@ class OlsrdThread(threading.Thread):
             time.sleep(1)
 
     def get_json_info(self):
-        url = "http://localhost:9090/"
-        f = urllib.urlopen(url)
-        print f.read()
+        try: 
+            url = "http://localhost:9090/"
+            f = urllib.urlopen(url)
+            print f.read()
+        except:
+            traceback.print_exc()
 
 class ConsoleOutput:  
     def __init__(self, source, console):
