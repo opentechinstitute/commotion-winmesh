@@ -72,17 +72,26 @@ def netsh_add_and_connect_cmd(netsh_spec):
     #return netbat.wait()
 
 
-def get_current_net_bssid(PyWiWi_iface):
-    def bssid_struct_to_string(dot11Bssid):
-        return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
+def wlan_dot11bssid_to_string(dot11Bssid):
+    return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
 
-    try:
-        cnx = WindowsWifi.queryInterface(PyWiWi_iface, 'current_connection')
-        bssid = bssid_struct_to_string(
-            cnx.wlanAssociationAttributes.dot11Bssid)
-    except:
-        bssid = ""
-    return bssid
+
+def get_wlan_current_connection(PyWiWi_iface):
+    cnx = WindowsWifi.queryInterface(PyWiWi_iface, 'current_connection')
+    return cnx
+
+
+def get_current_connection(PyWiWi_iface):
+    cnx = WindowsWifi.queryInterface(PyWiWi_iface, 'current_connection')
+    assn_attrs = cnx.wlanAssociationAttributes
+    result = {'profile_name': cnx.strProfileName,
+              'bssid': wlan_dot11bssid_to_string(assn_attrs.dot11Bssid)}
+    return result
+
+
+def get_current_net_bssid(PyWiWi_iface):
+    cnx = get_current_connection(PyWiWi_iface)
+    return cnx['bssid']
 
 
 def iface_has_commotion(PyWiWi_iface):
@@ -100,7 +109,8 @@ def collect_networks():
         # collect networks and useful metadata
     nets = []
     for iface in ifaces:
-        iface.initial_net = get_current_net_bssid(iface)
+        iface.initial_bssid = get_current_net_bssid(iface)
+        iface.initial_connection = get_current_connection(iface)
         iface.netsh_name = ifaces_by_guid[str(iface.guid)].NetConnectionID
         networks = WindowsWifi.getWirelessNetworkBssList(iface)
         for network in networks:
@@ -150,7 +160,6 @@ def start_olsrd_cmd(iface_name):
 def start_olsrd(iface_name):
     start = subprocess.Popen(start_olsrd_cmd(iface_name),
                             stdout=subprocess.PIPE)
-    return start#.communicate()
 
 
 def make_network(netsh_spec):
@@ -225,7 +234,7 @@ def print_available_networks():
     #net_list.sort(key=lambda opt: opt["network"].link_quality, reverse=True)
     print "#   @ CW? Interface     Qual BSSID             SSID"
     for idx, net in enumerate(net_list):
-        isCurrent = net["interface"].initial_net == net["network"].bssid
+        is_current = net["interface"].initial_bssid == net["network"].bssid
         print "".join(["{0:>2} ",
                        "{4:^3.1}",
                        "{3:^3.1} ",
@@ -236,7 +245,7 @@ def print_available_networks():
                                            net["interface"],
                                            net["network"],
                                            str(net["commotion"]),
-                                           str(isCurrent))
+                                           str(is_current))
 
 
 def cli_choose_network():
@@ -317,7 +326,8 @@ if __name__ == "__main__":
             ifaces_by_guid[wmi_iface.GUID] = wmi_iface
 
         for iface in ifaces:
-            iface.initial_net = get_current_net_bssid(iface)
+            iface.initial_bssid = get_current_net_bssid(iface)
+            iface.initial_connection = get_current_connection(iface)
             iface.netsh_name = ifaces_by_guid[str(iface.guid)].NetConnectionID
             # FIXME /a bunch of code badly ripped from collect_networks()
 
