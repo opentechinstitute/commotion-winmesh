@@ -63,7 +63,7 @@ def make_profile(params):
                               params)
 
 
-def netsh_add_and_connect_cmd(netsh_spec):
+def netsh_add_and_connect(netsh_spec):
     create_file_from_template(netsh_add_connect_template_path,
                               netsh_batch_path,
                               netsh_spec)
@@ -164,7 +164,7 @@ def start_olsrd(iface_name):
 
 def make_network(netsh_spec):
     make_profile(netsh_spec)
-    netsh_add_and_connect_cmd(netsh_spec) # now starts olsrd too
+    netsh_add_and_connect(netsh_spec) # now starts olsrd too
     #start_olsrd(netsh_spec["iface_name"])
 
 
