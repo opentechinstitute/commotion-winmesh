@@ -86,7 +86,7 @@ def netsh_add_and_connect(netsh_spec):
                               netsh_spec)
     # run the batch file
     netbat = subprocess.Popen(netsh_batch_path)
-    #return netbat.wait()
+    return netbat #.wait()
 
 
 def wlan_dot11bssid_to_string(dot11Bssid):
@@ -241,6 +241,7 @@ def make_network(netsh_spec):
     olsrd = start_olsrd(netsh_spec["iface_name"])
     return olsrd
 
+
 def holdup():
     # stay connected until done
     holdup = ''
@@ -392,8 +393,8 @@ def connect_or_start_network(idx):
         netsh_spec = make_netsh_spec(target_iface, commotion_SSID)
         save_current_profile(target_iface)
     olsrd = make_network(netsh_spec)
-    print "olsrd is", olsrd
     return olsrd
+
 
 if __name__ == "__main__":
     refresh_net_list()
