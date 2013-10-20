@@ -14,20 +14,27 @@ import urllib
 import traceback
 
 class OlsrdThread(threading.Thread):
-    def __init__(self):#, proc):
+    def __init__(self, olsrd_proc):
         threading.Thread.__init__(self)
-        #self.olsr_proc = proc
+        self.olsrd_proc = olsrd_proc
+        print "OlsrdThread olsrd_proc is", self.olsrd_proc
         self.stop = False
         self.i = 0
 
     def run(self):
         while True:
-            if self.i % 10 == 0: 
-                self.get_json_info()
-                print "next JSONInfo refresh in 10 seconds..."
-            self.i += 1
+            exitcode = self.olsrd_proc.poll()
+            if exitcode != None:
+                self.stop = True
+                print "olsrd exited with code", exitcode
+            else:
+                if self.i % 10 == 0:
+                    self.get_json_info()
+                    print "next JSONInfo refresh in 10 seconds..."
+                self.i += 1
             if self.stop: 
                 print "time to stop olsrd watch thread..."
+                self.olsrd_proc.terminate()
                 break
             time.sleep(1)
 
@@ -70,7 +77,8 @@ class WinMeshUI:
             network_idx = int(self.entryNetworkId.get_text()) # FIXME scrub input
             self.target_net = workout.net_list[network_idx]
 
-            workout.connect_or_start_network(network_idx)
+            self.olsrd_proc = workout.connect_or_start_network(network_idx)
+            print "WinMesh olsrd_proc is", self.olsrd_proc
 
             #bssid = workout.get_ssid_from_net_list(network_idx-1)
             #print "selected network bssid: %s, starting olsrd on interface: '%s'" % (bssid, netsh_name)
@@ -83,7 +91,7 @@ class WinMeshUI:
 
             # TODO start olsrd process watchdog thread
             # TODO start olsrd.jsoninfo plugin poller thread
-            self.olsrd_thread = OlsrdThread()
+            self.olsrd_thread = OlsrdThread(self.olsrd_proc)
             self.olsrd_thread.setDaemon(True)
             self.olsrd_thread.start()
         else:
@@ -114,6 +122,7 @@ class WinMeshUI:
 
     def shutdown(self):
         self.kill_olsrd()
+        workout.restore_previous_profile()
         #workout.shutdown_and_cleanup_network_gui()
 
     def close_application(self, widget):
