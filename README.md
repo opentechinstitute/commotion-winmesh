@@ -19,6 +19,14 @@ where you want to work. The OTI version will work just as well.
 
 1. ``> CC=i686-w64-mingw32-gcc make build_all OS=win32``
 
+### Building winmesh.exe
+
+On a windows machine, run:
+
+``pyinstaller winmesh.py``
+
+when that completes, copy the extra files from dist/ into dist/winmesh/
+
 __TODO__
 
 ### Preparing the Windows development environment
