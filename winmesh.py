@@ -25,7 +25,7 @@ class OlsrdThread(threading.Thread):
         while True:
             exitcode = self.olsrd_proc.poll()
             if exitcode != None:
-                self.stop = True
+                self.stop = True  #TODO: right now this is redundant
                 print "olsrd exited with code", exitcode
             else:
                 if self.i % 10 == 0:
@@ -100,7 +100,7 @@ class WinMeshUI:
 
     def kill_olsrd(self):
         try: 
-            self.olsr_proc.kill()
+            self.olsrd_proc.terminate()
         except:
             pass
 

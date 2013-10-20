@@ -1,6 +1,7 @@
 import os
 import io
 import sys
+import re
 import inspect
 import pickle
 #import win32com.shell.shell as shell
@@ -13,7 +14,7 @@ import subprocess  # for netsh and olsrd
 #from ctypes import wintypes
 #from ctypes import cdll  # loads libs exporting via cdecl
 
-commotion_BSSID = '12:CA:FF:EE:BA:BE'  # shows up in a few Commotion places
+commotion_BSSID_re = re.compile(r'[01]2:CA:FF:EE:BA:BE')
 commotion_SSID = 'commotion-wireless.net'
 commotion_profile_name = 'commotion-wireless.net'
 
@@ -124,8 +125,14 @@ def get_current_net_bssid(PyWiWi_iface):
     return bssid
 
 
+def bssid_is_commotion(bssid):
+    #NOTE: This is not fault tolerant.
+    match = commotion_BSSID_re.match(bssid)
+    return match != None
+
+
 def iface_has_commotion(PyWiWi_iface):
-    return commotion_BSSID == get_current_net_bssid(PyWiWi_iface)
+    return bssid_is_commotion(get_current_net_bssid(PyWiWi_iface))
 
 
 # collect existing networks on wireless interfaces
@@ -146,7 +153,7 @@ def collect_networks():
         for network in networks:
             nets.append({"interface": iface,
                          "network": network,
-                         "commotion": network.bssid == commotion_BSSID})
+                         "commotion": bssid_is_commotion(network.bssid)})
     return nets, ifaces
 
 
@@ -273,8 +280,9 @@ def restore_previous_profile():
             netsh_connect(connectable)
             print "restored from", fname
         except:
-            raise Exception(
-                    """Profile restore file exists but restore failed.""")
+            #raise Exception(
+                    #"""Profile restore file exists but restore failed.""")
+            print "Profile restore file exists but restore failed."
 
 
 def shutdown_and_cleanup_network(netsh_spec):
