@@ -280,12 +280,14 @@ def connect(wireless_interface, connection_params):
     """
     handle = WlanOpenHandle()
     cnxp = WLAN_CONNECTION_PARAMETERS()
-    cnxp.wlanConnectionMode = connection_params["connectionMode"]
+    connection_mode = connection_params["connectionMode"]
+    connection_mode_int = WLAN_CONNECTION_MODE_VK[connection_mode]
+    cnxp.wlanConnectionMode = WLAN_CONNECTION_MODE(connection_mode_int)
     # determine strProfile
-    if connection_params["connectionMode"] == 'wlan_connection_mode_profile':
+    if connection_mode == 'wlan_connection_mode_profile':
         # strProfile = name of profile to use for connection
-        cnxp.strProfile = connection_params["profile"]
-    elif connection_params["connectionMode"] == 'wlan_connection_mode_temporary_profile':
+        cnxp.strProfile = connection_params["profile"]  #TODO: STARTHERE
+    elif connection_mode == 'wlan_connection_mode_temporary_profile':
         # strProfile = profile XML
         cnxp.strProfile = connection_params["profile"]
     else:

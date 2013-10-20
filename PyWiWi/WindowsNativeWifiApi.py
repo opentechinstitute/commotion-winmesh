@@ -605,12 +605,14 @@ def WlanGetProfile(hClientHandle, pInterfaceGuid, profileName):
     return xml
 
 WLAN_CONNECTION_MODE = c_uint
-WLAN_CONNECTION_MODE_DICT = {0: "wlan_connection_mode_profile",
-                             1: "wlan_connection_mode_temporary_profile",
-                             2: "wlan_connection_mode_discovery_secure",
-                             3: "wlan_connection_mode_discovery_unsecure",
-                             4: "wlan_connection_mode_auto",
-                             5: "wlan_connection_mode_invalid"}
+WLAN_CONNECTION_MODE_KV = {0: "wlan_connection_mode_profile",
+                           1: "wlan_connection_mode_temporary_profile",
+                           2: "wlan_connection_mode_discovery_secure",
+                           3: "wlan_connection_mode_discovery_unsecure",
+                           4: "wlan_connection_mode_auto",
+                           5: "wlan_connection_mode_invalid"}
+WLAN_CONNECTION_MODE_VK = { v: k for k, v in
+        WLAN_CONNECTION_MODE_KV.iteritems() }
 
 class NDIS_OBJECT_HEADER(Structure):
     """

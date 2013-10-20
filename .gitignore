@@ -1,5 +1,10 @@
 # via https://github.com/github/gitignore/blob/master/Python.gitignore
 
+# developer-specific
+rsync_exclude.txt
+sync.sh
+
+# python detritus
 *.py[cod]
 
 # C extensions
