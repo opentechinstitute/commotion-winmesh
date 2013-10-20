@@ -70,7 +70,7 @@ class WinMeshUI:
             network_idx = int(self.entryNetworkId.get_text()) # FIXME scrub input
             self.target_net = workout.net_list[network_idx]
 
-            workout.connect_or_start_network(network_idx)
+            self.olsr_proc = workout.connect_or_start_network(network_idx)
 
             #bssid = workout.get_ssid_from_net_list(network_idx-1)
             #print "selected network bssid: %s, starting olsrd on interface: '%s'" % (bssid, netsh_name)

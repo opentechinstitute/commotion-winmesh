@@ -69,7 +69,7 @@ def netsh_add_and_connect_cmd(netsh_spec):
                               netsh_spec)
     # run the batch file
     netbat = subprocess.Popen(netsh_batch_path)
-    #return netbat.wait()
+    return netbat #.wait()
 
 
 def get_current_net_bssid(PyWiWi_iface):
@@ -155,7 +155,7 @@ def start_olsrd(iface_name):
 
 def make_network(netsh_spec):
     make_profile(netsh_spec)
-    netsh_add_and_connect_cmd(netsh_spec) # now starts olsrd too
+    return netsh_add_and_connect_cmd(netsh_spec) # now starts olsrd too
     #start_olsrd(netsh_spec["iface_name"])
 
 
@@ -287,13 +287,13 @@ def connect_or_start_network(idx):
         target_net = net_list[idx - 1]
         netsh_spec = make_netsh_spec(target_net["interface"],
                                      target_net["network"].ssid)
-        make_network(netsh_spec)
+        return make_network(netsh_spec)
     elif idx == 0:
         # start pseudo-commotion network (bad bssid)
         #ifaces = WindowsWifi.getWirelessInterfaces()
         target_iface = iface_list[0] #cli_choose_iface(ifaces)
         netsh_spec = make_netsh_spec(target_iface, commotion_SSID)
-        make_network(netsh_spec)
+        return make_network(netsh_spec)
 
 if __name__ == "__main__":
     refresh_net_list()
