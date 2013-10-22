@@ -8,13 +8,13 @@
 		</SSID>
 		<nonBroadcast>false</nonBroadcast>
 	</SSIDConfig>
-	<connectionType>IBSS</connectionType>
+	<connectionType>{bss_type}</connectionType>
 	<connectionMode>manual</connectionMode>
 	<MSM>
 		<security>
 			<authEncryption>
-				<authentication>open</authentication>
-				<encryption>none</encryption>
+				<authentication>{auth}</authentication>
+				<encryption>{cipher}</encryption>
 				<useOneX>false</useOneX>
 			</authEncryption>
 		</security>
