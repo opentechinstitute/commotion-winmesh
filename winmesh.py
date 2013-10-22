@@ -75,7 +75,7 @@ class WinMeshUI:
         if button.get_active():
             button.set_label(strings.TOGGLE_TEXT_STOP)
             network_idx = int(self.entryNetworkId.get_text()) # FIXME scrub input
-            self.target_net = workout.net_list[network_idx]
+            self.target_net = workout.net_list[network_idx-1]
 
             self.olsrd_proc = workout.connect_or_start_network(network_idx)
             print "WinMesh olsrd_proc is", self.olsrd_proc
