@@ -245,15 +245,6 @@ def netsh_add_profile_cmd(path):
                     "\""])
 
 
-def netsh_add_profile(path):
-    cmd =  netsh_add_profile_cmd(get_own_path(path))
-    print cmd
-    add = subprocess.Popen(cmd,
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE)
-    return add.wait()
-
-
 def netsh_connect_cmd(netsh_spec):
     return "".join(["netsh wlan connect",
                     " name=\"",
@@ -261,15 +252,6 @@ def netsh_connect_cmd(netsh_spec):
                     "\" interface=\"",
                     netsh_spec["iface_name"],
                     "\""])
-
-
-def netsh_connect(netsh_spec):
-    cmd = netsh_connect_cmd(netsh_spec)
-    print cmd
-    conn = subprocess.Popen(cmd,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
-    return conn.wait()
 
 
 def netsh_export_profile_cmd(path, profile_name, iface_name):
@@ -285,11 +267,69 @@ def netsh_export_profile_cmd(path, profile_name, iface_name):
                     "\""])
 
 
+def start_olsrd_cmd(iface_name):
+    print "olsrd_path", olsrd_path
+    return "".join([olsrd_path,
+                    #" -d 2",
+                    " -i \"",
+                    iface_name,
+                    "\"",
+                    " -f \"",
+                    olsrd_conf_path,
+                    "\""])
+
+
+def netsh_disconnect_cmd(netsh_spec):
+    return "".join(["netsh wlan disconnect",
+                    " interface=\"",
+                    netsh_spec["iface_name"],
+                    "\""])
+
+
+def netsh_delete_profile_cmd(netsh_spec):
+    return "".join(["netsh wlan delete profile",
+                    " name=\"",
+                    netsh_spec["profile_name"],
+                    "\" interface=\"",
+                    netsh_spec["iface_name"],
+                    "\""])
+
+
+def netsh_add_profile(path):
+    cmd =  netsh_add_profile_cmd(get_own_path(path))
+    print cmd
+    add = subprocess.Popen(cmd,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+    return add.wait()
+
+
+def netsh_connect(netsh_spec):
+    cmd = netsh_connect_cmd(netsh_spec)
+    print cmd
+    conn = subprocess.Popen(cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    return conn.wait()
+
+
 def netsh_export_profile(profile_name, iface_name):
     netsh = subprocess.call(netsh_export_profile_cmd(netsh_export_path,
                                                      profile_name,
                                                      iface_name))
     return netsh.wait()
+
+
+def start_olsrd(iface_name):
+    olsrd = subprocess.Popen(start_olsrd_cmd(iface_name),
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+    return olsrd
+
+
+def netsh_export_current_profile(iface):
+    cnx = get_current_connection(iface)
+    netsh_export_profile(cnx.profile_name, iface.netsh_name)
 
 
 def save_current_profile(iface):
@@ -312,29 +352,6 @@ def save_current_profile(iface):
     pickle.dump(connectable, open(fname, "w"))
     print "saved at", fname
 
-def netsh_export_current_profile(iface):
-    cnx = get_current_connection(iface)
-    netsh_export_profile(cnx.profile_name, iface.netsh_name)
-
-
-def start_olsrd_cmd(iface_name):
-    print "olsrd_path", olsrd_path
-    return "".join([olsrd_path,
-                    #" -d 2",
-                    " -i \"",
-                    iface_name,
-                    "\"",
-                    " -f \"",
-                    olsrd_conf_path,
-                    "\""])
-
-
-# FIXME needs to return a handle to the process
-def start_olsrd(iface_name):
-    olsrd = subprocess.Popen(start_olsrd_cmd(iface_name),
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
-    return olsrd
 
 def make_network(netsh_spec):
     make_profile(netsh_spec)
@@ -348,22 +365,6 @@ def holdup():
     holdup = ''
     while holdup != '!':
         holdup = raw_input("Enter ! to disconnect\n")
-
-
-def shutdown_and_cleanup_network_cmd(netsh_spec):
-    return "".join(["netsh wlan disconnect",
-                    " interface=\"",
-                    netsh_spec["iface_name"],
-                    "\""])
-
-
-def shutdown_and_cleanup_network_cmd2(netsh_spec):
-    return "".join(["netsh wlan delete profile",
-                    " name=\"",
-                    netsh_spec["profile_name"],
-                    "\" interface=\"",
-                    netsh_spec["iface_name"],
-                    "\""])
 
 
 def restore_previous_profile():
@@ -385,12 +386,12 @@ def restore_previous_profile():
 def shutdown_and_cleanup_network(netsh_spec):
     # disconnect from current network
     #WindowsWifi.disconnect(target_net["interface"])
-    sd = subprocess.call(shutdown_and_cleanup_network_cmd(netsh_spec))
+    sd = subprocess.call(netsh_disconnect_cmd(netsh_spec))
     sd.wait()
 
     # show current info for adapter
     # go back to old configuration when ready
-    sd2 = subprocess.call(shutdown_and_cleanup_network_cmd2(netsh_spec))
+    sd2 = subprocess.call(netsh_delete_profile_cmd(netsh_spec))
     sd2.wait()
 
     restore_previous_profile()
@@ -407,14 +408,14 @@ def shutdown_and_cleanup_network_gui():
 def shutdown_and_cleanup_network_cli(netsh_spec):
     # disconnect from current network
     #WindowsWifi.disconnect(target_net["interface"])
-    sd = subprocess.call(shutdown_and_cleanup_network_cmd(netsh_spec))
+    sd = subprocess.call(netsh_disconnect_cmd(netsh_spec))
     sd.wait()
 
     # show current info for adapter
     # go back to old configuration when ready
     delete_profile = raw_input("Delete this wireless profile? (Y|N)\n")
     if delete_profile == 'Y':
-        sd2 = subprocess.call(shutdown_and_cleanup_network_cmd2(netsh_spec))
+        sd2 = subprocess.call(netsh_delete_profile_cmd(netsh_spec))
         sd2.wait()
 
     restore_previous_profile()
