@@ -35,7 +35,6 @@ class OlsrdThread(threading.Thread):
                 self.i += 1
             if self.stop: 
                 print "time to stop olsrd watch thread..."
-                self.olsrd_proc.terminate()
                 break
             time.sleep(1)
 
