@@ -1,0 +1,6 @@
+[submodule "external/commotion-linux-py"]
+	path = external/commotion-linux-py
+	url = https://github.com/vitriolix/commotion-linux-py.git
+[submodule "external/commotion-mesh-applet"]
+	path = external/commotion-mesh-applet
+	url = https://github.com/vitriolix/commotion-mesh-applet.git
