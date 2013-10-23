@@ -4,7 +4,7 @@
 	<SSIDConfig>
 		<SSID>
                         <hex>{ssid_hex}</hex>
-                        <name>{ssid_name}</name>
+                        <name>{ssid}</name>
 		</SSID>
 		<nonBroadcast>false</nonBroadcast>
 	</SSIDConfig>
