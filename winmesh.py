@@ -12,6 +12,7 @@ import time
 import strings
 import urllib
 import traceback
+from commotion import *
 
 class OlsrdThread(threading.Thread):
     def __init__(self, olsrd_proc):
@@ -71,6 +72,18 @@ def get_netsh_name(network_idx):
     return workout.net_list[network_idx]["interface"].netsh_name
 
 class WinMeshUI:
+
+    def __init__(self, portinghacks=None):
+        self.portinghacks = portinghacks
+        imgdir = 'external/commotion-mesh-applet/'
+        self.mesh_status = MeshStatus(self.portinghacks, imagedir=imgdir)
+
+        self.init_ui()
+
+    def main(self):
+        gtk.gdk.threads_init()
+        gtk.main()
+
     def toggle_start(self, button, textview):
         if button.get_active():
             button.set_label(strings.TOGGLE_TEXT_STOP)
@@ -129,6 +142,9 @@ class WinMeshUI:
         self.shutdown()
         gtk.main_quit()
 
+    def show_mesh_status(self, widget):
+        self.mesh_status.show()
+
     def print_directions(self):
         print "\n\nTo join a network enter it's number below.  To create a network, enter 0 below."
 
@@ -136,7 +152,7 @@ class WinMeshUI:
         #self.net_list = workout.collect_networks()
         workout.print_available_networks()
 
-    def __init__(self):
+    def init_ui(self):
         window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         window.set_size_request (750, 550)
         window.set_resizable(True)  
@@ -203,14 +219,30 @@ class WinMeshUI:
         button.set_flags(gtk.CAN_DEFAULT)
         button.grab_default()
         button.show()
+        
+        button = gtk.Button("mesh status")
+        button.connect("clicked", self.show_mesh_status)
+        box2.pack_start(button, True, True, 0)
+        button.show()
+
         window.show()
 
-    def main(self):
-        gtk.gdk.threads_init()
-        gtk.main()
+def get_portinghacks():
+    port = PortingHacks()
+    port.BUTTONS_CLOSE = gtk.BUTTONS_CLOSE
+    port.FILE_CHOOSER_ACTION_SAVE = gtk.FILE_CHOOSER_ACTION_SAVE
+    port.MESSAGE_ERROR = gtk.MESSAGE_ERROR
+    port.MESSAGE_OTHER = gtk.MESSAGE_OTHER
+    port.RESPONSE_CANCEL = gtk.RESPONSE_CANCEL
+    port.RESPONSE_OK = gtk.RESPONSE_OK
+    port.DIALOG_DESTROY_WITH_PARENT = gtk.DIALOG_DESTROY_WITH_PARENT
+    port.SELECTION_NONE = gtk.SELECTION_NONE
+    port.STOCK_ABOUT = gtk.STOCK_ABOUT
+    port.pixbuf_new_from_file = gtk.gdk.pixbuf_new_from_file
+    return port
 
 if __name__ == "__main__":
-    app = WinMeshUI()
+    app = WinMeshUI(get_portinghacks())
     co = ConsoleOutput(None, app)
     sys.stdout = co
     sys.stderr = co

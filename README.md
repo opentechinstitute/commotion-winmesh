@@ -46,6 +46,7 @@ Platform: Windows 7 Professional
 
 1. Install [PyGTK](http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.24/) using an all-in-one installer
 
+1. Instapp pyjavapropoeries via pip
 
 We also depend on the [winreg](http://docs.python.org/2/library/_winreg.html) and
 [ctypes](http://docs.python.org/2/library/ctypes.html) Python extensions, but these
