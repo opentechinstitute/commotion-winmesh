@@ -42,8 +42,8 @@ commotion_default_cnxp = {
 profile_extension = ".xml"
 
 dot11_to_wlan_dict = {
-        "dot11_bss_type_infrastructure": "ESS",
-        "dot11_bss_type_independent": "IBSS",
+        "dot11_BSS_type_infrastructure": "ESS",
+        "dot11_BSS_type_independent": "IBSS",
         "DOT11_AUTH_ALGO_80211_OPEN": "open",
         "DOT11_AUTH_ALGO_80211_SHARED_KEY": "shared",
         "DOT11_AUTH_ALGO_WPA": "WPA",
@@ -257,8 +257,7 @@ def netsh_add_profile(path):
 def netsh_connect_cmd(netsh_spec):
     return "".join(["netsh wlan connect",
                     " name=\"",
-                    get_own_path("".join([netsh_spec["profile_name"],
-                                          profile_extension])),
+                    netsh_spec["profile_name"],  # *not* full path, just name
                     "\" interface=\"",
                     netsh_spec["iface_name"],
                     "\""])
