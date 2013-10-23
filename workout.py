@@ -4,19 +4,12 @@ import sys
 import re
 import inspect
 import pickle
-#import win32com.shell.shell as shell
-import _winreg  # http://docs.python.org/2.7/library/_winreg.html
-#import ctypes  # http://docs.python.org/2.7/library/ctypes.html
 import wmi  # http://timgolden.me.uk/python/wmi/index.html
 import subprocess  # for netsh and olsrd
 from PyWiWi import WindowsWifi
 from PyWiWi import WindowsNativeWifiApi as PWWnw
-#import PyWiWi.WindowsWifi as WindowsWifi
-#import PyWiWi.WindowsNativeWifiApi as PWWnw
 
-#from ctypes import windll  # loads libs exporting via stdcall
-#from ctypes import wintypes
-#from ctypes import cdll  # loads libs exporting via cdecl
+WMI = wmi.WMI()
 
 commotion_BSSID_re = re.compile(r'[01]2:CA:FF:EE:BA:BE')
 commotion_default_SSID = 'commotionwireless.net'
@@ -58,7 +51,6 @@ dot11_to_wlan_dict = {
         "DOT11_CIPHER_ALGO_CCMP": "AES"
         }
 
-WMI = wmi.WMI()
 
 def get_own_path(extends_with=None):
     if extends_with:
@@ -80,26 +72,6 @@ prev_profile_path = get_own_path(".prevprofile")
 netsh_export_path = get_own_path(".prevnet.xml")
 olsrd_path = get_own_path("olsrd.exe")
 olsrd_conf_path = get_own_path("olsrd.conf")
-
-# http://stackoverflow.com/questions/279237/import-a-module-from-a-folder
-#cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(
-    #inspect.currentframe()))[0]))
-#if cmd_folder not in sys.path:
-    #sys.path.insert(0, cmd_folder)
-
-# Import from subdirectories. (__init__.py works in some envs, not others)
-#try:
-    #import PyWiWi.WindowsWifi as WindowsWifi
-    #import PyWiWi.WindowsNativeWifiApi as PWWnw
-#except ImportError:
-    #cmd_subfolder = os.path.realpath(
-        #os.path.abspath(os.path.join(os.path.split(
-            #inspect.getfile(inspect.currentframe()
-            #))[0], "PyWiWi")))
-    #if cmd_subfolder not in sys.path:
-        #sys.path.insert(0, cmd_subfolder)
-    #import PyWiWi.WindowsWifi as WindowsWifi
-    #import PyWiWi.WindowsNativeWifiApi as PWWnw
 
 
 def create_file_from_template(template_path, result_path, params):
@@ -537,15 +509,4 @@ if __name__ == "__main__":
     else:
         exit()
 
-    # connect to chosen network
-    # http://msdn.microsoft.com/en-us/library/windows/desktop/ms706851(v=vs
-    # .85).aspx
-    #cnxp = {"connectionMode": 0,
-    #"profile": commotion_profile_path,
-    ##"ssid": target_net["network"].ssid,
-    #"ssid": None,
-    #"bssidList": [target_net["network"].bssid],
-    ## bssType must match type from profile provided
-    #"bssType": target_net["network"].bss_type,
-    #"flags": 0}
-#WindowsWifi.connect(target_net["interface"], cnxp)
+
