@@ -23,6 +23,7 @@ from ctypes import *
 from comtypes import GUID
 from WindowsNativeWifiApi import *
 
+NULL = None
 
 class WirelessInterface(object):
     def __init__(self, wlan_iface_info):
@@ -299,15 +300,16 @@ def connect(wireless_interface, connection_params):
                            'wlan_connection_mode_temporary_profile'):  # xml
         cnxp.strProfile = LPCWSTR(connection_params["profile"])
     else:
-        cnxp.strProfile = None  # NULL
+        cnxp.strProfile = NULL
     # ssid
     if connection_params["ssid"] is not None:
-        cnxp.pDot11Ssid = pointer(DOT11_SSID(
+        dot11Ssid = DOT11_SSID(
                 len(connection_params["ssid"]),
                 connection_params["ssid"]
-                ))
+                )
+        cnxp.pDot11Ssid = pointer(dot11Ssid)
     else:
-        ssid = None  # NULL
+        cnxp.pDot11Ssid = NULL
     # bssidList
     if connection_params["bssidList"] is not None:
         bssids = []
@@ -327,15 +329,16 @@ def connect(wireless_interface, connection_params):
                 bssids)
         cnxp.pDesiredBssidList = pointer(bssidList)
     else:
-        cnxp.bssidList = None
-        cnxp.pDesiredBssidList = None # required for XP
+        cnxp.pDesiredBssidList = NULL # required for XP
     # look up bssType
     # bssType must match type from profile if a profile is provided
-    if cnxp.strProfile is not None:
-        for key, val in DOT11_BSS_TYPE_DICT.items():
-            if val == connection_params["bssType"]:
-                bssType = key
-                break
+    #if cnxp.strProfile is not None:
+    for key, val in DOT11_BSS_TYPE_DICT.items():
+        if val == connection_params["bssType"]:
+            bssType = key
+            break
+    #else:
+        #bssType = connection_params["bssType"]
     cnxp.dot11BssType = DOT11_BSS_TYPE(bssType)
     # flags
     cnxp.dwFlags = DWORD(connection_params["flags"])
