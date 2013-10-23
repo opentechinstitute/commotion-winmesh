@@ -105,7 +105,7 @@ class WinMeshUI:
             # TODO start olsrd.jsoninfo plugin poller thread
             self.olsrd_thread = OlsrdThread(self.olsrd_proc)
             self.olsrd_thread.setDaemon(True)
-            self.olsrd_thread.start()
+            #self.olsrd_thread.start()
         else:
             button.set_label(strings.TOGGLE_TEXT_START)
             self.shutdown()
