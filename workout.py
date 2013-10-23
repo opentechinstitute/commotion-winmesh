@@ -20,19 +20,24 @@ from PyWiWi import WindowsNativeWifiApi as PWWnw
 
 commotion_BSSID_re = re.compile(r'[01]2:CA:FF:EE:BA:BE')
 commotion_default_SSID = 'commotionwireless.net'
-commotion_default_net = {"ssid": commotion_default_SSID,
-                         "profile_name": commotion_default_SSID,
-                         "bss_type": "dot11_BSS_type_independent",
-                         "auth": "DOT11_AUTH_ALGO_RSNA_PSK",  # WPA2 etc
-                         "cipher": "DOT11_CIPHER_ALGO_CCMP"}  # AES etc
-commotion_default_cnxp = {"connectionMode": \
-                            "wlan_connection_mode_profile",
-                          "profile": None,  # will generate
-                          "ssid": commotion_default_SSID,
-                          "bssidList": ["02:CA:FF:EE:BA:BE"],
-                          #"bssidList": ["FF:FF:FF:FF:FF:FF"],  # wildcard
-                          "bssType": "dot11_BSS_type_infrastructure",
-                          "flags": 0}
+commotion_default_netsh_spec = {
+        "profile_name": commotion_default_SSID,
+        "ssid_hex": commotion_default_SSID.encode('hex').upper(),
+        "ssid": commotion_default_SSID,
+        "iface_name": "",
+        "bss_type": "dot11_bss_type_independent",
+        "auth": "DOT11_AUTH_ALGO_RSNA_PSK",  # WPA2 etc
+        "cipher": "DOT11_CIPHER_ALGO_CCMP"  # AES etc
+        }
+commotion_default_cnxp = {
+        "connectionMode": "wlan_connection_mode_profile",
+        "profile": None,  # will generate
+        "ssid": commotion_default_SSID,
+        "bssidList": ["02:CA:FF:EE:BA:BE"],
+        #"bssidList": ["FF:FF:FF:FF:FF:FF"],  # wildcard
+        "bssType": "dot11_BSS_type_infrastructure",
+        "flags": 0
+        }
 
 profile_extension = ".xml"
 
@@ -482,7 +487,8 @@ def connect_or_start_network(idx):
         #ifaces = WindowsWifi.getWirelessInterfaces()
         target_iface = iface_list[0] #cli_choose_iface(ifaces)
         save_current_profile(target_iface)
-        netsh_spec = make_netsh_spec(target_net)
+        netsh_spec = commotion_default_netsh_spec
+        netsh_spec["interface"] = target_iface
     olsrd = make_network(netsh_spec)
     return olsrd
 
