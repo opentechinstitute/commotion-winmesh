@@ -144,6 +144,14 @@ class WinMeshUI:
     def show_mesh_status(self, widget):
         self.mesh_status.show()
 
+    def show_jsoninfo(self, widget):
+        try: 
+            url = "http://localhost:9090/"
+            f = urllib.urlopen(url)
+            print f.read()
+        except:
+            traceback.print_exc()
+
     def print_directions(self):
         print "\n\nTo join a network enter it's number below.  To create a network, enter 0 below."
 
@@ -202,26 +210,30 @@ class WinMeshUI:
         self.entryNetworkId.set_text("0")
         self.entryNetworkId.show()
 
-
         separator = gtk.HSeparator()
         box1.pack_start(separator, False, True, 0)
         separator.show()
 
-        box2 = gtk.VBox(False, 10)
+        box2 = gtk.HBox(False, 10)
         box2.set_border_width(10)
         box1.pack_start(box2, False, True, 0)
         box2.show()
+        
+        button = gtk.Button("show mesh status")
+        button.connect("clicked", self.show_mesh_status)
+        box2.pack_start(button, True, True, 0)
+        button.show()
+        
+        button = gtk.Button("show jsoninfo")
+        button.connect("clicked", self.show_jsoninfo)
+        box2.pack_start(button, True, True, 0)
+        button.show()
 
-        button = gtk.Button("close")
+        button = gtk.Button("quit winmesh")
         button.connect("clicked", self.close_application)
         box2.pack_start(button, True, True, 0)
         button.set_flags(gtk.CAN_DEFAULT)
         button.grab_default()
-        button.show()
-        
-        button = gtk.Button("mesh status")
-        button.connect("clicked", self.show_mesh_status)
-        box2.pack_start(button, True, True, 0)
         button.show()
 
         window.show()
