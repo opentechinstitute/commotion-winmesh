@@ -25,9 +25,9 @@ commotion_default_netsh_spec = {
         "ssid_hex": commotion_default_SSID.encode('hex').upper(),
         "ssid": commotion_default_SSID,
         "iface_name": "",
-        "bss_type": "dot11_bss_type_independent",
-        "auth": "DOT11_AUTH_ALGO_RSNA_PSK",  # WPA2 etc
-        "cipher": "DOT11_CIPHER_ALGO_CCMP"  # AES etc
+        "bss_type": "IBSS",
+        "auth": "WPA2PSK",
+        "cipher": "AES"
         }
 commotion_default_cnxp = {
         "connectionMode": "wlan_connection_mode_profile",
@@ -40,6 +40,23 @@ commotion_default_cnxp = {
         }
 
 profile_extension = ".xml"
+
+dot11_to_wlan_dict = {
+        "dot11_bss_type_infrastructure": "ESS",
+        "dot11_bss_type_independent": "IBSS",
+        "DOT11_AUTH_ALGO_80211_OPEN": "open",
+        "DOT11_AUTH_ALGO_80211_SHARED_KEY": "shared",
+        "DOT11_AUTH_ALGO_WPA": "WPA",
+        "DOT11_AUTH_ALGO_WPA_PSK": "WPAPSK",
+        "DOT11_AUTH_ALGO_RSNA": "WPA2",
+        "DOT11_AUTH_ALGO_RSNA_PSK": "WPA2PSK",
+        "DOT11_CIPHER_ALGO_NONE": "none",
+        "DOT11_CIPHER_ALGO_WEP40": "WEP",
+        "DOT11_CIPHER_ALGO_WEP104": "WEP",
+        "DOT11_CIPHER_ALGO_WEP": "WEP",
+        "DOT11_CIPHER_ALGO_TKIP": "TKIP",
+        "DOT11_CIPHER_ALGO_CCMP": "AES"
+        }
 
 WMI = wmi.WMI()
 
@@ -108,14 +125,8 @@ def make_profile(netsh_spec):
 
 
 def netsh_add_and_connect(netsh_spec):
-    #create_file_from_template(netsh_add_connect_template_path,
-                              #netsh_batch_path,
-                              #netsh_spec)
-    # run the batch file
-    #netbat = subprocess.Popen(netsh_batch_path)
-    netsh_add_profile(netsh_spec["ssid"])
+    netsh_add_profile(netsh_spec["ssid"])  # path
     netsh_connect(netsh_spec)
-    #return netbat #.wait()
 
 
 def wlan_dot11bssid_to_string(dot11Bssid):
@@ -234,12 +245,10 @@ def netsh_add_profile_cmd(path):
                     "\""])
 
 
-# FIXME do we need to capture stderr?
 def netsh_add_profile(path):
-    print "netsh_add_profile path", path
-    print get_own_path(path)
-    print netsh_add_profile_cmd(get_own_path(path))
-    add = subprocess.Popen(netsh_add_profile_cmd(get_own_path(path)),
+    cmd =  netsh_add_profile_cmd(get_own_path(path))
+    print cmd
+    add = subprocess.Popen(cmd,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE)
     return add.wait()
@@ -255,9 +264,10 @@ def netsh_connect_cmd(netsh_spec):
                     "\""])
 
 
-# FIXME do we need to capture stderr?
 def netsh_connect(netsh_spec):
-    conn = subprocess.Popen(netsh_connect_cmd(netsh_spec),
+    cmd = netsh_connect_cmd(netsh_spec)
+    print cmd
+    conn = subprocess.Popen(cmd,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
     return conn.wait()
@@ -439,13 +449,15 @@ def cli_choose_network():
 
 
 def make_netsh_spec(net):
-    return {"profile_name": net["bss_list"][0].ssid,
+    netsh_spec = {"profile_name": net["bss_list"][0].ssid,
             "ssid_hex": net["bss_list"][0].ssid.encode('hex').upper(),
             "ssid": net["bss_list"][0].ssid,
             "iface_name": net["interface"].netsh_name,
-            "bss_type": net["bss_list"][0].bss_type,
-            "auth": net["auth"],
-            "cipher": net["cipher"]}
+            "bss_type": dot11_to_wlan_dict[net["bss_list"][0].bss_type],
+            "auth": dot11_to_wlan_dict[net["auth"]],
+            "cipher": dot11_to_wlan_dict[net["cipher"]]}
+    print "netsh_spec", netsh_spec
+    return netsh_spec
 
 
 def cli_choose_iface(ifaces):
@@ -488,7 +500,7 @@ def connect_or_start_network(idx):
         target_iface = iface_list[0] #cli_choose_iface(ifaces)
         save_current_profile(target_iface)
         netsh_spec = commotion_default_netsh_spec
-        netsh_spec["interface"] = target_iface
+        netsh_spec["iface_name"] = target_iface.netsh_name
     olsrd = make_network(netsh_spec)
     return olsrd
 
