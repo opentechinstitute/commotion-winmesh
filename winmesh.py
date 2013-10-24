@@ -76,7 +76,7 @@ class WinMeshUI:
         self.portinghacks = portinghacks
         imgdir = 'external/commotion-mesh-applet/'
         self.mesh_status = MeshStatus(self.portinghacks, imagedir=imgdir)
-
+        self.commotion = WindowsCommotionCore(profiledir='profiles/')
         self.init_ui()
 
     def main(self):
@@ -151,6 +151,12 @@ class WinMeshUI:
             print f.read()
         except:
             traceback.print_exc()
+
+
+    def print_profiles(self):
+        profiles = self.commotion.readProfiles()
+        for k,v in profiles.iteritems():
+            print "profile %s: %s" % (k, v)
 
     def print_directions(self):
         print "\n\nTo join a network enter it's number below.  To create a network, enter 0 below."
@@ -254,14 +260,19 @@ def get_portinghacks():
 
 if __name__ == "__main__":
     app = WinMeshUI(get_portinghacks())
-    co = ConsoleOutput(None, app)
-    sys.stdout = co
-    sys.stderr = co
-    #t = WorkoutThread()
-    #t.setDaemon(True)
-    #t.start()
-    app.probe_network()
-    app.print_directions()
+    if sys.argv[1] != 'testui':    
+        co = ConsoleOutput(None, app)
+        #sys.stdout = co
+        #sys.stderr = co
+    
+        #t = WorkoutThread()
+        #t.setDaemon(True)
+        #t.start()
+
+        app.probe_network()
+        app.print_directions()
+        app.print_profiles()
+    
     app.main()
     #t.stop()
 

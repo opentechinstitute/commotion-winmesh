@@ -4,12 +4,15 @@ import sys
 import re
 import inspect
 import pickle
-import wmi  # http://timgolden.me.uk/python/wmi/index.html
 import subprocess  # for netsh and olsrd
-from PyWiWi import WindowsWifi
-from PyWiWi import WindowsNativeWifiApi as PWWnw
+try:
+    import wmi  # http://timgolden.me.uk/python/wmi/index.html
+    from PyWiWi import WindowsWifi
+    from PyWiWi import WindowsNativeWifiApi as PWWnw
+    WMI = wmi.WMI()
+except:
+    pass
 
-WMI = wmi.WMI()
 
 newline = "\r\n"
 
