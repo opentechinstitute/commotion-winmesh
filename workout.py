@@ -245,9 +245,10 @@ def collect_networks():
             for bss in nets_bss:
                 if bss.ssid == net_avail.ssid:
                     net["bss_list"].append(bss)
-                if net["commotion"] == False:
-                    # one commotion BSSID marks the SSID as commotion
-                    net["commotion"] = commotion_BSSID_re.match(bss.bssid)
+                    if not net["commotion"]:
+                        # one commotion BSSID marks the SSID as commotion
+                        net["commotion"] = bool(
+                                commotion_BSSID_re.match(bss.bssid))
             nets.append(net)
     return nets, ifaces
 
