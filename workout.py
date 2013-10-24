@@ -4,12 +4,15 @@ import sys
 import re
 import inspect
 import pickle
-import wmi  # http://timgolden.me.uk/python/wmi/index.html
 import subprocess  # for netsh and olsrd
-from PyWiWi import WindowsWifi
-from PyWiWi import WindowsNativeWifiApi as PWWnw
+try:
+    import wmi  # http://timgolden.me.uk/python/wmi/index.html
+    from PyWiWi import WindowsWifi
+    from PyWiWi import WindowsNativeWifiApi as PWWnw
+    WMI = wmi.WMI()
+except:
+    pass
 
-WMI = wmi.WMI()
 
 commotion_BSSID_re = re.compile(r'[01]2:CA:FF:EE:BA:BE')
 commotion_default_SSID = 'commotionwireless.net'
