@@ -182,6 +182,7 @@ def collect_networks():
         iface.initial_bssid = get_current_net_bssid(iface)
         iface.initial_connection = get_current_connection(iface)
         iface.netsh_name = ifaces_by_guid[str(iface.guid)].NetConnectionID
+        iface.MAC = ifaces_by_guid[str(iface.guid)].MACAddress
         # SSID<one-many>BSSID
         # WW.gWNBL gives BSSIDs with SSID each
         # WW.gWANL gives SSIDs with BSSID count and sec info
