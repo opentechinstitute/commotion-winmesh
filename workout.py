@@ -11,6 +11,8 @@ from PyWiWi import WindowsNativeWifiApi as PWWnw
 
 WMI = wmi.WMI()
 
+newline = "\r\n"
+
 commotion_BSSID_re = re.compile(r'[01]2:CA:FF:EE:BA:BE')
 commotion_default_SSID = 'commotionwireless.net'
 commotion_default_netsh_spec = {
@@ -65,6 +67,7 @@ def get_own_path(extends_with=None):
 
 commotion_profile_path = get_own_path("commotion_wireless_profile.xml")
 profile_template_path = get_own_path("profile_template.xml.py")
+profile_key_template_path = get_own_path("sharedKey.xml.py")
 arbitrary_profile_path = get_own_path("arbitrary_profile.xml")
 netsh_add_connect_template_path = get_own_path("netsh_add_connect.bat.py")
 netsh_batch_path = get_own_path("netsh_add_connect.bat")
@@ -74,17 +77,28 @@ olsrd_path = get_own_path("olsrd.exe")
 olsrd_conf_path = get_own_path("olsrd.conf")
 
 
+def write_file(path, filestring):
+    with io.open(path, mode="w", newline=newline) as f:
+        f.write(unicode(filestring))
+
+
+def load_file(path):
+    with io.open(path, mode="rt", newline=newline) as f:
+        return "".join(line.rstrip() for line in f)
+
+
+def apply_template(template_string, params):
+    return template.format(**params)
+
+
+def template_file_to_string(template_path, params):
+    template = load_file(template_path)
+    return apply_template(template, params)
+
+
 def create_file_from_template(template_path, result_path, params):
-    def load_template(template_path):
-        with io.open(template_path, mode="rt", newline="\r\n") as f:
-            return "".join(line.rstrip() for line in f)
-
-    def write_file(result_path, filestring):
-        with io.open(result_path, mode="w", newline="\r\n") as f:
-            f.write(unicode(filestring))
-
-    template = load_template(template_path)
-    write_file(result_path, template.format(**params))
+    applied_template = template_file_to_string(template_path, params)
+    write_file(result_path, applied_template)
 
 
 def make_profile(netsh_spec):
@@ -94,6 +108,35 @@ def make_profile(netsh_spec):
     create_file_from_template(profile_template_path,
                               xml_path,
                               netsh_spec)
+
+
+def make_temporary_profile(netsh_spec):
+    sharedKey = template_file_to_string(profile_key_template_path, netsh_spec)
+    netsh_spec["shared_key"] = sharedKey
+    profile = template_file_to_string(profile_template_path, netsh_spec)
+    return profile
+
+
+def connect_temporary_profile(netsh_spec):
+    profile = make_temporary_profile(netsh_spec)
+    """
+        connection_params should be a dict with this structure:
+        { "connectionMode": "valid connection mode string",
+          "profile": ("profile name string" | "profile xml" | None)*,
+          "ssid": "ssid string",
+          "bssidList": [ "desired bssid string", ... ],
+          "bssType": valid bss type int,
+          "flags": valid flag dword in 0x00000000 format }
+        * Currently, only the name string is supported here.
+    """
+    cnxp = {"connectionMode": "wlan_connect_mode_temporary_profile",
+            "profile": make_temporary_profile(netsh_spec),
+            "ssid": netsh_spec["ssid"],
+            "bssidList": [netsh_spec["bssid"]],
+            "bssType": netsh_spec["bss_type"],
+            "flags": 0}
+    cnx = WindowsWifi.connect(cnxp)
+    print "connect_temporary_profile result", cnx
 
 
 def netsh_add_and_connect(netsh_spec):
@@ -171,7 +214,7 @@ def collect_networks():
                 return True
         return False
     ifaces = WindowsWifi.getWirelessInterfaces()
-    # prepare to get each interface's "common name" for netsh
+    # prepare to get each interface's "common name" and MAC address
     wmi_ifaces = wmi.WMI().Win32_NetworkAdapter()
     ifaces_by_guid = {}
     for wmi_iface in wmi_ifaces:
@@ -203,10 +246,6 @@ def collect_networks():
                     # one commotion BSSID marks the SSID as commotion
                     net["commotion"] = commotion_BSSID_re.match(bss.bssid)
             nets.append(net)
-        #for net_bss in nets_bss:
-            #nets.append({"interface": iface,
-                         #"network": net_bss,
-                         #"commotion": bssid_is_commotion(net_bss.bssid)})
     return nets, ifaces
 
 
@@ -422,13 +461,21 @@ def cli_choose_network():
 
 
 def make_netsh_spec(net):
-    netsh_spec = {"profile_name": net["bss_list"][0].ssid,
+    wlan = dot11_to_wlan_dict
+    netsh_spec = {
+            "iface_name": net["interface"].netsh_name,
+            "MAC": net["interface"].MAC,
+            "profile_name": net["bss_list"][0].ssid,
             "ssid_hex": net["bss_list"][0].ssid.encode('hex').upper(),
             "ssid": net["bss_list"][0].ssid,
-            "iface_name": net["interface"].netsh_name,
-            "bss_type": dot11_to_wlan_dict[net["bss_list"][0].bss_type],
-            "auth": dot11_to_wlan_dict[net["auth"]],
-            "cipher": dot11_to_wlan_dict[net["cipher"]]}
+            "bssid": net["bss_list"][0].bssid,
+            "bss_type": wlan[net["bss_list"][0].bss_type],
+            "auth": wlan[net["auth"]],
+            "cipher": wlan[net["cipher"]],
+            "shared_key": net.get("shared_key", "<!-- no key provided -->"),
+            "key_type": ("keyType" if \
+                    wlan[net["auth"]] == "WEP" else "passPhrase")
+            }
     print "netsh_spec", netsh_spec
     return netsh_spec
 
