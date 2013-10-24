@@ -346,6 +346,7 @@ def connect(wireless_interface, connection_params):
                 wireless_interface.guid,
                 cnxp)
     WlanCloseHandle(handle)
+    return result
 
 def dot11bssid_to_string(dot11Bssid):
     return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
