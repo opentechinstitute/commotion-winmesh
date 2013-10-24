@@ -260,11 +260,11 @@ def get_portinghacks():
 
 if __name__ == "__main__":
     app = WinMeshUI(get_portinghacks())
-    if sys.argv[1] != 'testui':    
+    if len(sys.argv) > 1 and sys.argv[1] != 'testui':
         co = ConsoleOutput(None, app)
         #sys.stdout = co
         #sys.stderr = co
-    
+
         #t = WorkoutThread()
         #t.setDaemon(True)
         #t.start()
@@ -272,7 +272,7 @@ if __name__ == "__main__":
         app.probe_network()
         app.print_directions()
         app.print_profiles()
-    
+
     app.main()
     #t.stop()
 
