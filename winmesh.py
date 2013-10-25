@@ -220,7 +220,6 @@ class WinMeshUI:
         self.dirty()
 
     def dirty(self):
-        print "dirty"
         self._dirty = True
         self.save_button.set_sensitive(True)
 
@@ -428,8 +427,8 @@ if __name__ == "__main__":
         #t.setDaemon(True)
         #t.start()
 
-    app.probe_network()
-    app.print_directions()
+        app.probe_network()
+        app.print_directions()
     
     app.print_profiles()
     app.main()
