@@ -73,6 +73,7 @@ def get_netsh_name(network_idx):
 class WinMeshUI:
 
     def __init__(self, portinghacks=None):
+        self.profiles = None
         self.portinghacks = portinghacks
         imgdir = 'external/commotion-mesh-applet/'
         self.mesh_status = MeshStatus(self.portinghacks, imagedir=imgdir)
@@ -109,6 +110,19 @@ class WinMeshUI:
         else:
             button.set_label(strings.TOGGLE_TEXT_START)
             self.shutdown()
+
+    def profile_selection_made(self, clist, row, col, event, data=None):
+        text = clist.get_text(row, col)
+        self.display_profile_in_editor(self.profiles[text])
+
+    def display_profile_in_editor(self, profile):
+        self.tbSSID.set_text(profile["ssid"])
+        self.tbBSSID.set_text(profile["bssid"])
+        self.tbChannel.set_text(profile["channel"])
+        self.tbIP.set_text(profile["ip"])
+        self.cbIPGenerate.set_active((profile["ipgenerate"] == "true"))
+        self.tbNetmask.set_text(profile["netmask"])
+        self.tbDNS.set_text(profile["dns"])
 
     def kill_olsrd(self):
         try: 
@@ -152,10 +166,29 @@ class WinMeshUI:
         except:
             traceback.print_exc()
 
+    # FIXME move this into the profile manager
+    def clear_profiles(self):
+        self.profiles = None
+
+    def refresh_profiles(self):
+        self.clear_profiles()
+        self.profiles = self.commotion.readProfiles()
+
+    def get_profile_names(self):
+        if self.profiles is None:
+            self.profiles = self.commotion.readProfiles()
+
+        profile_names = []
+        for k,v in self.profiles.iteritems():
+            profile_names.append(k)
+            print "profile %s: %s" % (k, v)
+        return profile_names
 
     def print_profiles(self):
-        profiles = self.commotion.readProfiles()
-        for k,v in profiles.iteritems():
+        if self.profiles is None:
+            self.profiles = self.commotion.readProfiles()
+
+        for k,v in self.profiles.iteritems():
             print "profile %s: %s" % (k, v)
 
     def print_directions(self):
@@ -167,7 +200,7 @@ class WinMeshUI:
 
     def init_ui(self):
         window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        window.set_size_request (750, 550)
+        window.set_size_request (750, 650)
         window.set_resizable(True)  
         window.connect("destroy", self.close_application)
         window.set_title("Commotion Wireless for Windows (prototype 1)")
@@ -182,16 +215,99 @@ class WinMeshUI:
         box1.pack_start(box2, True, True, 0)
         box2.show()
 
-        sw = gtk.ScrolledWindow()
-        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        notebook = gtk.Notebook()
+        notebook.set_tab_pos(gtk.POS_TOP)
+        notebook.show()
+        self.show_tabs = True
+        self.show_border = True
+
+        def add_page(notebook, title, page):
+            sw = gtk.ScrolledWindow()
+            #sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+            sw.add(page)
+            sw.show()
+            
+            #box = gtk.VBox(False,10)
+            #box.pack_start(page, expand=True, fill=True, padding=0) 
+            #box.show()           
+            
+            label = gtk.Label(title)
+            
+            #notebook.append_page(box, label)
+            notebook.append_page(sw, label)
+
+        #sw = gtk.ScrolledWindow()
+        #sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.textview = gtk.TextView()
         self.textview.set_sensitive(False)
         self.textbuffer = self.textview.get_buffer()
-        sw.add(self.textview)
-        sw.show()
+        #sw.add(self.textview)
+        #sw.show()
         self.textview.show()
 
-        box2.pack_start(sw)
+        hbox = gtk.HBox(False, 10)
+        
+        # FIXME replace with TreeView: http://www.pygtk.org/pygtk2tutorial/ch-TreeViewWidget.html
+        clist = gtk.CList(1)
+        for i in self.get_profile_names():
+            clist.append([i])
+        clist.set_column_width(0, 200)
+        clist.set_shadow_type(gtk.SHADOW_OUT)
+        clist.connect("select_row", self.profile_selection_made)
+        clist.show()
+        hbox.pack_start(clist, expand=False, fill=False, padding=0)
+        hbox.show()
+        
+        def get_profile_editor_controls():
+            def add_item(b, l, t):
+                l.set_alignment(0, 0)
+                b.pack_start(l, expand=False, fill=False, padding=0)
+                b.pack_start(t, expand=False, fill=False, padding=0)
+
+            vbox = gtk.VBox(False, 10)
+
+            label = gtk.Label("Mesh Netword Name (SSID):")
+            self.tbSSID = gtk.Entry()
+            add_item(vbox, label, self.tbSSID)
+
+            label = gtk.Label("BSSID:")
+            self.tbBSSID = gtk.Entry()
+            add_item(vbox, label, self.tbBSSID)
+
+            label = gtk.Label("Channel:")
+            self.tbChannel = gtk.Entry()
+            add_item(vbox, label, self.tbChannel)
+
+            label = gtk.Label("IP:")
+            self.tbIP = gtk.Entry()
+            add_item(vbox, label, self.tbIP)
+
+            label = gtk.Label("IPGenerate:")
+            self.cbIPGenerate = gtk.CheckButton()
+            add_item(vbox, label, self.cbIPGenerate)
+
+            label = gtk.Label("Netmask:")
+            self.tbNetmask = gtk.Entry()
+            add_item(vbox, label, self.tbNetmask)
+
+            label = gtk.Label("DNS:")
+            self.tbDNS = gtk.Entry()
+            add_item(vbox, label, self.tbDNS)
+
+            vbox.show_all()
+            return vbox
+
+        vbox_profile_controls = get_profile_editor_controls()
+        hbox.pack_start(vbox_profile_controls, expand=True, fill=True, padding=10)
+        hbox.show()
+        add_page(notebook, "profiles", hbox)        
+
+        #add_page(notebook, "logs", sw)
+        add_page(notebook, "logs", self.textview)
+
+        vbox = gtk.VBox(False, 10)
+
+        box2.pack_start(notebook)
 
         string = "Available networks:\n\n"
         self.textbuffer.set_text(string)
@@ -202,17 +318,17 @@ class WinMeshUI:
 
         vbox = gtk.VBox()
         vbox.show()
-        hbox.pack_start(vbox, False, False, 0)
+        hbox.pack_start(vbox, expand=False, fill=False, padding=0)
 
         # check button to start up commotion
         check = gtk.ToggleButton(strings.TOGGLE_TEXT_START)
-        vbox.pack_start(check, False, False, 0)
+        vbox.pack_start(check, expand=False, fill=False, padding=0)
         check.connect("toggled", self.toggle_start, self.textview)
         check.set_active(False)
         check.show()
 
         self.entryNetworkId = gtk.Entry(max=2)
-        vbox.pack_start(self.entryNetworkId, False, False, 0)
+        vbox.pack_start(self.entryNetworkId, expand=False, fill=False, padding=0)
         self.entryNetworkId.set_text("0")
         self.entryNetworkId.show()
 
@@ -271,8 +387,8 @@ if __name__ == "__main__":
 
         app.probe_network()
         app.print_directions()
-        app.print_profiles()
-
+    
+    app.print_profiles()
     app.main()
     #t.stop()
 
