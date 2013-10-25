@@ -331,10 +331,10 @@ class WinMeshUI:
             self.tbDNS.connect("changed", self.changed)
             add_item(vbox, label, self.tbDNS)
 
-            self.save_button = gtk.Button("save profile")
-            self.save_button.set_sensitive(False)
-            self.save_button.connect("clicked", self.save_profile_clicked)
-            vbox.pack_end(self.save_button)
+            #self.save_button = gtk.Button("save profile")
+            #self.save_button.set_sensitive(False)
+            #self.save_button.connect("clicked", self.save_profile_clicked)
+            #vbox.pack_end(self.save_button)
 
             vbox.show_all()
             return vbox
@@ -368,11 +368,6 @@ class WinMeshUI:
         check.connect("toggled", self.toggle_start, self.textview)
         check.set_active(False)
         check.show()
-
-        self.entryNetworkId = gtk.Entry(max=2)
-        vbox.pack_start(self.entryNetworkId, expand=False, fill=False, padding=0)
-        self.entryNetworkId.set_text("0")
-        self.entryNetworkId.show()
 
         separator = gtk.HSeparator()
         box1.pack_start(separator, False, True, 0)
@@ -420,17 +415,11 @@ if __name__ == "__main__":
     app = WinMeshUI(get_portinghacks())
     if len(sys.argv) > 1 and sys.argv[1] != 'testui':
         co = ConsoleOutput(None, app)
-        #sys.stdout = co
-        #sys.stderr = co
-
-        #t = WorkoutThread()
-        #t.setDaemon(True)
-        #t.start()
+        sys.stdout = co 
+        sys.stderr = co
 
         app.probe_network()
         app.print_directions()
     
     app.print_profiles()
     app.main()
-    #t.stop()
-
