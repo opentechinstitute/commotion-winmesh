@@ -74,6 +74,8 @@ class WinMeshUI:
 
     def __init__(self, portinghacks=None):
         self.profiles = None
+        self._dirty = False
+
         self.portinghacks = portinghacks
         imgdir = 'external/commotion-mesh-applet/'
         self.mesh_status = MeshStatus(self.portinghacks, imagedir=imgdir)
@@ -110,6 +112,9 @@ class WinMeshUI:
     def profile_selection_made(self, clist, row, col, event, data=None):
         text = clist.get_text(row, col)
         self.display_profile_in_editor(self.profiles[text])
+
+    def save_profile_clicked(self, button):
+        print "button clicked"
 
     def display_profile_in_editor(self, profile):
         self.tbSSID.set_text(profile["ssid"])
@@ -194,9 +199,17 @@ class WinMeshUI:
         #self.net_list = workout.collect_networks()
         workout.print_available_networks()
 
+    def changed(self, changedtext):
+        self.dirty()
+
+    def dirty(self):
+        print "dirty"
+        self._dirty = True
+        self.save_button.set_sensitive(True)
+
     def init_ui(self):
         window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        window.set_size_request (750, 650)
+        window.set_size_request (750, 700)
         window.set_resizable(True)  
         window.connect("destroy", self.close_application)
         window.set_title("Commotion Wireless for Windows (prototype 1)")
@@ -253,7 +266,7 @@ class WinMeshUI:
         clist.show()
         hbox.pack_start(clist, expand=False, fill=False, padding=0)
         hbox.show()
-        
+
         def get_profile_editor_controls():
             def add_item(b, l, t):
                 l.set_alignment(0, 0)
@@ -264,31 +277,43 @@ class WinMeshUI:
 
             label = gtk.Label("Mesh Netword Name (SSID):")
             self.tbSSID = gtk.Entry()
+            self.tbSSID.connect("changed", self.changed)
             add_item(vbox, label, self.tbSSID)
 
             label = gtk.Label("BSSID:")
             self.tbBSSID = gtk.Entry()
+            self.tbBSSID.connect("changed", self.changed)
             add_item(vbox, label, self.tbBSSID)
 
             label = gtk.Label("Channel:")
             self.tbChannel = gtk.Entry()
+            self.tbChannel.connect("changed", self.changed)
             add_item(vbox, label, self.tbChannel)
 
             label = gtk.Label("IP:")
             self.tbIP = gtk.Entry()
+            self.tbIP.connect("changed", self.changed)
             add_item(vbox, label, self.tbIP)
 
             label = gtk.Label("IPGenerate:")
             self.cbIPGenerate = gtk.CheckButton()
+            self.cbIPGenerate.connect("toggled", self.changed)
             add_item(vbox, label, self.cbIPGenerate)
 
             label = gtk.Label("Netmask:")
             self.tbNetmask = gtk.Entry()
+            self.tbNetmask.connect("changed", self.changed)
             add_item(vbox, label, self.tbNetmask)
 
             label = gtk.Label("DNS:")
             self.tbDNS = gtk.Entry()
+            self.tbDNS.connect("changed", self.changed)
             add_item(vbox, label, self.tbDNS)
+
+            self.save_button = gtk.Button("save profile")
+            self.save_button.set_sensitive(False)
+            self.save_button.connect("clicked", self.save_profile_clicked)
+            vbox.pack_end(self.save_button)
 
             vbox.show_all()
             return vbox
