@@ -61,6 +61,7 @@ def get_own_path(extends_with=None):
     if extends_with:
         sep = "/"
     else:
+        extends_with = ""
         sep = ""
     base_path = os.path.dirname(os.path.abspath(sys.argv[0]))
     ext_path = os.path.abspath("".join([base_path,
@@ -91,7 +92,7 @@ def load_file(path):
 
 
 def apply_template(template_string, params):
-    return template.format(**params)
+    return template_string.format(**params)
 
 
 def template_file_to_string(template_path, params):
@@ -250,6 +251,7 @@ def collect_networks():
                         net["commotion"] = bool(
                                 commotion_BSSID_re.match(bss.bssid))
             nets.append(net)
+        nets = [net for net in nets if net["commotion"]]
     return nets, ifaces
 
 

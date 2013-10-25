@@ -87,23 +87,19 @@ class WinMeshUI:
     def toggle_start(self, button, textview):
         if button.get_active():
             button.set_label(strings.TOGGLE_TEXT_STOP)
-            network_idx = int(self.entryNetworkId.get_text()) # FIXME scrub input
-            self.target_net = workout.net_list[network_idx-1]
+            #network_idx = int(self.entryNetworkId.get_text()) # FIXME scrub input
+            #self.target_net = workout.net_list[network_idx-1]
 
+            #FIXME: stopgap behavior:
+            # On start, connect to the first available Commotion network.
+            # If no commotion network available, start one.
+            network_idx = int(bool(len(workout.net_list)))  # 0 or 1
             self.olsrd_proc = workout.connect_or_start_network(network_idx)
-            print "WinMesh olsrd_proc is", self.olsrd_proc
-
-            #bssid = workout.get_ssid_from_net_list(network_idx-1)
-            #print "selected network bssid: %s, starting olsrd on interface: '%s'" % (bssid, netsh_name)
-
-#            self.olsr_proc = workout.start_olsrd(get_netsh_name(network_idx))
 
             #glib.io_add_watch(self.olsr_proc.stdout, # FILE DESCRIPTOR
             #                  glib.IO_IN,  # CONDITION
             #                  self.write_to_buffer ) # CALLBACK
 
-            # TODO start olsrd process watchdog thread
-            # TODO start olsrd.jsoninfo plugin poller thread
             self.olsrd_thread = OlsrdThread(self.olsrd_proc)
             self.olsrd_thread.setDaemon(True)
             #self.olsrd_thread.start()
@@ -385,8 +381,8 @@ if __name__ == "__main__":
         #t.setDaemon(True)
         #t.start()
 
-        app.probe_network()
-        app.print_directions()
+    app.probe_network()
+    app.print_directions()
     
     app.print_profiles()
     app.main()
