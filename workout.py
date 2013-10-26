@@ -39,7 +39,7 @@ commotion_default_cnxp = {
 
 profile_extension = ".xml"
 
-dot11_to_wlan_dict = {
+dot11_to_wlan = {
         "dot11_BSS_type_infrastructure": "ESS",
         "dot11_BSS_type_independent": "IBSS",
         "DOT11_AUTH_ALGO_80211_OPEN": "open",
@@ -113,35 +113,6 @@ def make_profile(netsh_spec):
     create_file_from_template(profile_template_path,
                               xml_path,
                               netsh_spec)
-
-
-def make_temporary_profile(netsh_spec):
-    sharedKey = template_file_to_string(profile_key_template_path, netsh_spec)
-    netsh_spec["shared_key"] = sharedKey
-    profile = template_file_to_string(profile_template_path, netsh_spec)
-    return profile
-
-
-def connect_temporary_profile(netsh_spec):
-    profile = make_temporary_profile(netsh_spec)
-    """
-        connection_params should be a dict with this structure:
-        { "connectionMode": "valid connection mode string",
-          "profile": ("profile name string" | "profile xml" | None)*,
-          "ssid": "ssid string",
-          "bssidList": [ "desired bssid string", ... ],
-          "bssType": valid bss type int,
-          "flags": valid flag dword in 0x00000000 format }
-        * Currently, only the name string is supported here.
-    """
-    cnxp = {"connectionMode": "wlan_connect_mode_temporary_profile",
-            "profile": make_temporary_profile(netsh_spec),
-            "ssid": netsh_spec["ssid"],
-            "bssidList": [netsh_spec["bssid"]],
-            "bssType": netsh_spec["bss_type"],
-            "flags": 0}
-    cnx = WindowsWifi.connect(cnxp)
-    print "connect_temporary_profile result", cnx
 
 
 def netsh_add_and_connect(netsh_spec):
@@ -352,16 +323,13 @@ def netsh_export_current_profile(iface):
 
 
 def save_current_profile(iface):
-    #TODO: is it ok to use a file like this?
-    cnx = get_current_connection(iface)
     fname = prev_profile_path
-    restore = True  #NOTE: dummy variable
-    if cnx and restore:
+    cnx = get_current_connection(iface)
+    if cnx:
         if cnx["mode"] == "wlan_connection_mode_profile":
-            connectable = {"restore": restore,
+            connectable = {"restore": True,
                            "profile_name": cnx["profile_name"],
                            "iface_name": iface.netsh_name,
-                           #"profile_xml": ,
                            "delete_after_restore": False
                            }
         #else:  # no profile for this connection
@@ -468,21 +436,28 @@ def cli_choose_network():
 
 
 def make_netsh_spec(net):
-    wlan = dot11_to_wlan_dict
+    wlan = dot11_to_wlan
     netsh_spec = {
+            "interface": net["interface"],
             "iface_name": net["interface"].netsh_name,
             "MAC": net["interface"].MAC,
             "profile_name": net["bss_list"][0].ssid,
             "ssid_hex": net["bss_list"][0].ssid.encode('hex').upper(),
             "ssid": net["bss_list"][0].ssid,
             "bssid": net["bss_list"][0].bssid,
+            "dot11_bss_type": net["bss_list"][0].bss_type,
             "bss_type": wlan[net["bss_list"][0].bss_type],
             "auth": wlan[net["auth"]],
             "cipher": wlan[net["cipher"]],
-            "shared_key": net.get("shared_key", "<!-- no key provided -->"),
+            "key_material": net.get("key_material", None),
             "key_type": ("keyType" if \
                     wlan[net["auth"]] == "WEP" else "passPhrase")
             }
+    if netsh_spec["key_material"] is not None:
+        netsh_spec["shared_key"] = apply_template(profile_key_template_path,
+                                                  netsh_spec)
+    else:
+        netsh_spec["shared_key"] = ""
     print "netsh_spec", netsh_spec
     return netsh_spec
 
