@@ -79,7 +79,9 @@ class WinMeshUI:
         self.portinghacks = portinghacks
         imgdir = 'external/commotion-mesh-applet/'
         self.mesh_status = MeshStatus(self.portinghacks, imagedir=imgdir)
-        self.commotion = WindowsCommotionCore(profiledir='profiles/')
+        self.commotion = WindowsCommotionCore(
+                profiledir="".join([workout.get_own_path('/profiles/'),
+                                    "\\"]))
         self.init_ui()
 
     def main(self):
