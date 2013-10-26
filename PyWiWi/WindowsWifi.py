@@ -59,7 +59,7 @@ class WirelessNetwork(object):
     def __init__(self, wireless_network):
         self.ssid = wireless_network.dot11Ssid.SSID[:DOT11_SSID_MAX_LENGTH]
         self.profile_name = wireless_network.ProfileName
-        self.bss_type = DOT11_BSS_TYPE_DICT[wireless_network.dot11BssType]
+        self.bss_type = DOT11_BSS_TYPE_DICT_KV[wireless_network.dot11BssType]
         self.number_of_bssids = wireless_network.NumberOfBssids
         self.connectable = bool(wireless_network.NetworkConnectable)
         self.number_of_phy_types = wireless_network.NumberOfPhyTypes
@@ -94,7 +94,7 @@ class WirelessNetworkBss(object):
         self.ssid = bss_entry.dot11Ssid.SSID[:DOT11_SSID_MAX_LENGTH]
         self.link_quality = bss_entry.LinkQuality
         self.bssid = ":".join(map(lambda x: "%02X" % x, bss_entry.dot11Bssid))
-        self.bss_type = DOT11_BSS_TYPE_DICT[bss_entry.dot11BssType]
+        self.bss_type = DOT11_BSS_TYPE_DICT_KV[bss_entry.dot11BssType]
         self.phy_type = DOT11_PHY_TYPE_DICT[bss_entry.dot11BssPhyType]
         self.rssi = bss_entry.Rssi
         self.capabilities = bss_entry.CapabilityInformation
@@ -303,14 +303,16 @@ def connect(wireless_interface, connection_params):
         cnxp.strProfile = NULL
     # ssid
     if connection_params["ssid"] is not None:
-        dot11Ssid = DOT11_SSID(
-                len(connection_params["ssid"]),
-                connection_params["ssid"]
-                )
+        dot11Ssid = DOT11_SSID()
+        dot11Ssid.SSID = connection_params["ssid"]
+        dot11Ssid.SSIDLength = len(connection_params["ssid"])
         cnxp.pDot11Ssid = pointer(dot11Ssid)
     else:
         cnxp.pDot11Ssid = NULL
     # bssidList
+    # NOTE: Before this can actually support multiple entries,
+    #   the DOT11_BSSID_LIST structure must be rewritten to
+    #   dynamically resize itself based on input.
     if connection_params["bssidList"] is not None:
         bssids = []
         for bssidish in connection_params["bssidList"]:
@@ -322,23 +324,17 @@ def connect(wireless_interface, connection_params):
         bssidListHeader.Type = chr(NDIS_OBJECT_TYPE_DEFAULT)
         bssidListHeader.Revision = chr(DOT11_BSSID_LIST_REVISION_1) # chr()
         bssidListHeader.Size = c_ushort(sizeof(DOT11_BSSID_LIST))
-        bssidList = DOT11_BSSID_LIST(
-                bssidListHeader,
-                bssidListEntries,
-                bssidListEntries,
-                bssids)
+        bssidList = DOT11_BSSID_LIST()
+        bssidList.Header = bssidListHeader
+        bssidList.uNumOfEntries = bssidListEntries
+        bssidList.uTotalNumOfEntries = bssidListEntries
+        bssidList.BSSIDs = bssids
         cnxp.pDesiredBssidList = pointer(bssidList)
     else:
         cnxp.pDesiredBssidList = NULL # required for XP
     # look up bssType
     # bssType must match type from profile if a profile is provided
-    #if cnxp.strProfile is not None:
-    for key, val in DOT11_BSS_TYPE_DICT.items():
-        if val == connection_params["bssType"]:
-            bssType = key
-            break
-    #else:
-        #bssType = connection_params["bssType"]
+    bssType = DOT11_BSS_TYPE_DICT_VK[connection_params["bssType"]]
     cnxp.dot11BssType = DOT11_BSS_TYPE(bssType)
     # flags
     cnxp.dwFlags = DWORD(connection_params["flags"])
@@ -376,7 +372,7 @@ def queryInterface(wireless_interface, opcode_item):
         aa = r.wlanAssociationAttributes
         wlanAssociationAttributes = {
                 "dot11Ssid": aa.dot11Ssid.SSID,
-                "dot11BssType": DOT11_BSS_TYPE_DICT[aa.dot11BssType],
+                "dot11BssType": DOT11_BSS_TYPE_DICT_KV[aa.dot11BssType],
                 "dot11Bssid": dot11bssid_to_string(aa.dot11Bssid),
                 "dot11PhyType": DOT11_PHY_TYPE_DICT[aa.dot11PhyType],
                 "uDot11PhyIndex": c_long(aa.uDot11PhyIndex).value,
