@@ -223,7 +223,7 @@ def collect_networks():
                         net["commotion"] = bool(
                                 commotion_BSSID_re.match(bss.bssid))
             nets.append(net)
-        nets = [net for net in nets if net["commotion"]]
+    nets = [net for net in nets if net["commotion"]]
     return nets, ifaces
 
 
