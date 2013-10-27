@@ -198,7 +198,6 @@ class WinMeshUI:
         print "\n\nTo join a network enter it's number below.  To create a network, enter 0 below."
 
     def probe_network(self):
-        #self.net_list = workout.collect_networks()
         workout.print_available_networks()
 
     def changed(self, changedtext):

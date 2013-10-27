@@ -65,17 +65,11 @@ def get_own_path(extends_with=None):
         sep = ""
     base_path = os.path.dirname(os.path.abspath(inspect.getfile(
             inspect.currentframe())))
-    ext_path = os.path.abspath("".join([base_path,
-                                    sep,
-                                    extends_with]))
+    ext_path = os.path.abspath("".join([base_path, sep, extends_with]))
     return ext_path
 
-commotion_profile_path = get_own_path("commotion_wireless_profile.xml")
 profile_template_path = get_own_path("profile_template.xml.py")
 profile_key_template_path = get_own_path("sharedKey.xml.py")
-arbitrary_profile_path = get_own_path("arbitrary_profile.xml")
-netsh_add_connect_template_path = get_own_path("netsh_add_connect.bat.py")
-netsh_batch_path = get_own_path("netsh_add_connect.bat")
 prev_profile_path = get_own_path(".prevprofile")
 netsh_export_path = get_own_path(".prevnet.xml")
 olsrd_path = get_own_path("olsrd.exe")
@@ -106,18 +100,12 @@ def create_file_from_template(template_path, result_path, params):
     write_file(result_path, applied_template)
 
 
-def make_profile(netsh_spec):
+def make_wlan_profile(netsh_spec):
     xml_path = get_own_path("".join([netsh_spec["profile_name"],
                                             profile_extension]))
-    print "make_profile xml_path", xml_path
     create_file_from_template(profile_template_path,
                               xml_path,
                               netsh_spec)
-
-
-def netsh_add_and_connect(netsh_spec):
-    netsh_add_profile(netsh_spec["ssid"])  # path
-    netsh_connect(netsh_spec)
 
 
 def wlan_dot11bssid_to_string(dot11Bssid):
@@ -322,7 +310,7 @@ def netsh_export_current_profile(iface):
     netsh_export_profile(cnx.profile_name, iface.netsh_name)
 
 
-def save_current_profile(iface):
+def save_current_netsh_profile(iface):
     fname = prev_profile_path
     cnx = get_current_connection(iface)
     if cnx:
@@ -341,8 +329,9 @@ def save_current_profile(iface):
 
 
 def make_network(netsh_spec):
-    make_profile(netsh_spec)
-    netsh_add_and_connect(netsh_spec) # no longer starts olsrd
+    make_wlan_profile(netsh_spec)
+    netsh_add_profile(netsh_spec["ssid"])
+    netsh_connect(netsh_spec)
     olsrd = start_olsrd(netsh_spec["iface_name"])
     return olsrd
 
