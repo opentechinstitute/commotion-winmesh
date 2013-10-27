@@ -185,6 +185,7 @@ def collect_networks():
         ifaces_by_guid[wmi_iface.GUID] = wmi_iface
     # collect networks and useful metadata
     nets = []
+    nets_dict = {}
     for iface in ifaces:
         iface.initial_bssid = get_current_net_bssid(iface)
         iface.initial_connection = get_current_connection(iface)
@@ -210,9 +211,17 @@ def collect_networks():
                         # one commotion BSSID marks the SSID as commotion
                         net["commotion"] = bool(
                                 commotion_BSSID_re.match(bss.bssid))
+                    nets_dict[(iface.netsh_name, bss.ssid, bss.bssid)] = {
+                            "interface": iface,
+                            "auth": net_avail.auth,
+                            "cipher": net_avail.cipher,
+                            "ssid": bss.ssid,
+                            "bssid": bss.bssid,
+                            "quality": bss.link_quality
+                            }
             nets.append(net)
-    nets = [net for net in nets if net["commotion"]]
-    return nets, ifaces
+    #nets = [net for net in nets if net["commotion"]]
+    return nets, ifaces, nets_dict
 
 
 def netsh_add_profile_cmd(path):
@@ -468,7 +477,8 @@ net_list = None
 def refresh_net_list():
     global net_list
     global iface_list
-    net_list, iface_list = collect_networks()
+    global nets_dict
+    net_list, iface_list, nets_dict = collect_networks()
     net_list.sort(key=lambda opt: opt["bss_list"][0].link_quality, reverse=True)
 
 
