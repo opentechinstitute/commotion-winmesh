@@ -224,6 +224,10 @@ def collect_networks():
     return nets, ifaces, nets_dict
 
 
+def find_matching_available_nets(ssid, bssid):
+    return [n for n in nets_dict if (n[1] == ssid and n[2] == bssid)]
+
+
 def netsh_add_profile_cmd(path):
     return "".join(["netsh wlan add profile",
                     " filename=\"",

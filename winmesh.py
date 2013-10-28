@@ -178,15 +178,25 @@ class WinMeshUI:
         self.clear_profiles()
         self.profiles = self.commotion.readProfiles()
 
+
     def get_profile_names(self):
         if self.profiles is None:
             self.profiles = self.commotion.readProfiles()
 
         profile_names = []
         for k,v in self.profiles.iteritems():
-            profile_names.append(k)
+            #FIXME: appending net availability to profile name is stopgap hack
+            matches = workout.find_matching_available_nets(v["ssid"],
+                                                           v["bssid"])
+            print "matches", matches
+            if len(matches) > 0:
+                avail = " (available)"
+            else:
+                avail = ""
+            profile_names.append("".join([k, avail]))
             print "profile %s: %s" % (k, v)
         return profile_names
+
 
     def print_profiles(self):
         if self.profiles is None:
