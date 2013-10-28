@@ -409,8 +409,9 @@ def apply_rollback_params():
     else:
         print "No restore file found"
     # delete wlan profile store entry for current mesh
-    netsh_delete_profile(connectable["mesh_wlan_name"],
-                         connectable["interface"].netsh_name)
+    if "connectable" in locals():
+        netsh_delete_profile(connectable["mesh_wlan_name"],
+                             connectable["interface"].netsh_name)
 
 
 def shutdown_and_cleanup_network(netsh_spec):
