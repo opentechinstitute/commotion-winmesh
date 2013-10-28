@@ -103,9 +103,8 @@ def create_file_from_template(template_path, result_path, params):
 def make_wlan_profile(netsh_spec):
     xml_path = get_own_path("".join([netsh_spec["profile_name"],
                                             profile_extension]))
-    create_file_from_template(profile_template_path,
-                              xml_path,
-                              netsh_spec)
+    create_file_from_template(profile_template_path, xml_path, netsh_spec)
+    return xml_path
 
 
 def wlan_dot11bssid_to_string(dot11Bssid):
@@ -343,11 +342,33 @@ def save_current_netsh_profile(iface):
     print "saved at", fname
 
 
+def wlan_connect(spec):
+    # PyWiWi.WindowsWifi.connect() only works reliably in profile mode.
+    #   So we use that. We need it because the netsh wlan connect doesn't
+    #   allow BSSID specification.
+    cnxp = {"connectionMode": "wlan_connection_mode_profile",
+            "profile": spec["profile_name"],
+            "ssid": spec["ssid"],
+            "bssidList": [spec["bssid"]],
+            "bssType": spec["dot11_bss_type"],
+            "flags": 0}
+    print "about to connect", cnxp
+    result = WindowsWifi.connect(spec["interface"], cnxp)
+
+
 def make_network(netsh_spec):
     make_wlan_profile(netsh_spec)
     netsh_add_profile(netsh_spec["ssid"])
     netsh_connect(netsh_spec)
     olsrd = start_olsrd(netsh_spec["iface_name"])
+    return olsrd
+
+
+def make_network2(netsh_spec):
+    print make_wlan_profile(netsh_spec)
+    netsh_add_profile(netsh_spec["ssid"])
+    wlan_connect(netsh_spec)
+    olsrd = start_olsrd(netsh_spec["interface"].netsh_name)
     return olsrd
 
 
@@ -466,6 +487,34 @@ def make_netsh_spec(net):
     return netsh_spec
 
 
+def make_netsh_spec2(net):
+    wlan = dot11_to_wlan
+    netsh_spec = {
+            "interface": net["interface"],
+            "iface_name": net["interface"].netsh_name,
+            "MAC": net["interface"].MAC,
+            "profile_name": net["ssid"],
+            "ssid_hex": net["ssid"].encode('hex').upper(),
+            "ssid": net["ssid"],
+            "bssid": net["bssid"],
+            "dot11_bss_type": net["dot11_bss_type"],
+            "bss_type": wlan[net["dot11_bss_type"]],
+            "auth": wlan[net["auth"]],
+            "cipher": wlan[net["cipher"]],
+            "key_material": net.get("key_material", None),
+            "key_type": ("keyType" if \
+                    wlan[net["auth"]] == "WEP" else "passPhrase")
+            }
+    if netsh_spec["key_material"] is not None:
+        netsh_spec["shared_key"] = template_file_to_string(
+                profile_key_template_path,
+                netsh_spec)
+    else:
+        netsh_spec["shared_key"] = ""
+    print "netsh_spec", netsh_spec
+    return netsh_spec
+
+
 def cli_choose_iface(ifaces):
     print "#   Interface"
     idx = 0
@@ -494,21 +543,51 @@ def get_ssid_from_net_list(idx):
     return net_list[idx]["bss_list"][0]["SSID"]
 
 
-def connect_or_start_network(idx):
+def connect_or_start_mesh(idx):
     #refresh_net_list()
     if idx > 0 and idx <= len(net_list):
         # join an existing network
         target_net = net_list[idx - 1]
-        save_current_profile(target_net["interface"])
+        save_current_netsh_profile(target_net["interface"])
         netsh_spec = make_netsh_spec(target_net)
     elif idx == 0:
         # start pseudo-commotion network (bad bssid)
         #ifaces = WindowsWifi.getWirelessInterfaces()
         target_iface = iface_list[0] #cli_choose_iface(ifaces)
-        save_current_profile(target_iface)
+        save_current_netsh_profile(target_iface)
         netsh_spec = commotion_default_netsh_spec
         netsh_spec["iface_name"] = target_iface.netsh_name
     olsrd = make_network(netsh_spec)
+    return olsrd
+
+
+def connect_or_start_profiled_mesh(profile):
+    print "selected mesh", profile["ssid"]
+    #FIXME: Until interface selection in UI, just use first available
+    if len(profile["available_nets"]) > 0:
+        print "connecting to existing mesh"
+        target_net = nets_dict[profile["available_nets"][0]]  # hack
+        save_current_netsh_profile(target_net["interface"])
+        target_net["key_material"] = profile["psk"]
+        netsh_spec = make_netsh_spec2(target_net)
+    else:
+        print "creating new mesh"
+        target_iface = iface_list[0]  # hack
+        save_current_netsh_profile(target_iface)
+        dummy_net = {
+                "interface": target_iface,
+                "profile_name": profile["ssid"],
+                "ssid": profile["ssid"],
+                "bssid": profile["bssid"],
+                "dot11_bss_type": "dot11_BSS_type_independent",
+                "bss_type": "IBSS",
+                "auth": "DOT11_AUTH_ALGO_RSNA_PSK",  #WPA2PSK
+                "cipher": "DOT11_CIPHER_ALGO_CCMP",  #AES
+                "key_material": profile["psk"]
+                }
+        netsh_spec = make_netsh_spec2(dummy_net)
+        netsh_spec["iface_name"] = target_iface.netsh_name
+    olsrd = make_network2(netsh_spec)
     return olsrd
 
 
