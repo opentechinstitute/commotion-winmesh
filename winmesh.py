@@ -83,6 +83,7 @@ class WinMeshUI:
                 olsrdconf=workout.olsrd_conf_path
                 )
         workout.refresh_net_list()
+        self.profiles = self.read_profiles()
         self.init_ui()
 
     def main(self):
@@ -91,29 +92,27 @@ class WinMeshUI:
 
     def toggle_start(self, button, textview):
         if button.get_active():
-            button.set_label(strings.TOGGLE_TEXT_STOP)
-            #network_idx = int(self.entryNetworkId.get_text()) # FIXME scrub input
-            #self.target_net = workout.net_list[network_idx-1]
+            if self.selected_profile is not None:
+                button.set_label(strings.TOGGLE_TEXT_STOP)
 
-            #FIXME: stopgap behavior:
-            # On start, connect to the first available Commotion network.
-            # If no commotion network available, start one.
-            network_idx = int(bool(len(workout.net_list)))  # 0 or 1
-            self.olsrd_proc = workout.connect_or_start_network(network_idx)
+                self.olsrd_proc = workout.connect_or_start_profiled_mesh(
+                        self.selected_profile)
 
-            #glib.io_add_watch(self.olsr_proc.stdout, # FILE DESCRIPTOR
-            #                  glib.IO_IN,  # CONDITION
-            #                  self.write_to_buffer ) # CALLBACK
+                #glib.io_add_watch(self.olsr_proc.stdout, # FILE DESCRIPTOR
+                #                  glib.IO_IN,  # CONDITION
+                #                  self.write_to_buffer ) # CALLBACK
 
-            self.olsrd_thread = OlsrdThread(self.olsrd_proc)
-            self.olsrd_thread.setDaemon(True)
-            #self.olsrd_thread.start()
+                self.olsrd_thread = OlsrdThread(self.olsrd_proc)
+                self.olsrd_thread.setDaemon(True)
+                #self.olsrd_thread.start()
         else:
             button.set_label(strings.TOGGLE_TEXT_START)
             self.shutdown()
 
     def profile_selection_made(self, clist, row, col, event, data=None):
-        text = clist.get_text(row, col)
+        text = clist.get_text(row, 1)  #FIXME: hard coded column for name
+        print "profile selection made", text
+        self.selected_profile = self.profiles[text]
         self.display_profile_in_editor(self.profiles[text])
 
     def save_profile_clicked(self, button):
@@ -174,33 +173,39 @@ class WinMeshUI:
     def clear_profiles(self):
         self.profiles = None
 
+    def annotate_profiles(self, profiles):
+        for k,v in profiles.iteritems():
+            matches = workout.find_matching_available_nets(v["ssid"], v["bssid"])
+            if len(matches) > 0:
+                v["available"] = True
+            else:
+                v["available"] = False
+            v["available_nets"] = matches
+        return profiles
+
+    def read_profiles(self):
+        profiles = self.commotion.readProfiles()
+        profiles = self.annotate_profiles(profiles)
+        return profiles
+
     def refresh_profiles(self):
         self.clear_profiles()
-        self.profiles = self.commotion.readProfiles()
-
+        self.profiles = self.read_profiles()
 
     def get_profile_names(self):
         if self.profiles is None:
-            self.profiles = self.commotion.readProfiles()
+            self.profiles = self.read_profiles()
 
         profile_names = []
         for k,v in self.profiles.iteritems():
-            #FIXME: appending net availability to profile name is stopgap hack
-            matches = workout.find_matching_available_nets(v["ssid"],
-                                                           v["bssid"])
-            print "matches", matches
-            if len(matches) > 0:
-                avail = " (available)"
-            else:
-                avail = ""
-            profile_names.append("".join([k, avail]))
-            print "profile %s: %s" % (k, v)
+            profile_names.append(k)
+            #print "profile %s: %s" % (k, v)
         return profile_names
 
 
     def print_profiles(self):
         if self.profiles is None:
-            self.profiles = self.commotion.readProfiles()
+            self.profiles = self.read_profiles()
 
         for k,v in self.profiles.iteritems():
             print "profile %s: %s" % (k, v)
@@ -269,10 +274,15 @@ class WinMeshUI:
         hbox = gtk.HBox(False, 10)
         
         # FIXME replace with TreeView: http://www.pygtk.org/pygtk2tutorial/ch-TreeViewWidget.html
-        clist = gtk.CList(1)
-        for i in self.get_profile_names():
-            clist.append([i])
-        clist.set_column_width(0, 200)
+        #clist = gtk.CList(1)
+        #for i in self.get_profile_names():
+            #clist.append([i[0], i[1]])
+        clist = gtk.CList(2)
+        #FIXME: hard coded column identities
+        for k,v in self.profiles.iteritems():
+            clist.append(["@" if v["available"] else "", k])
+        clist.set_column_width(0, 10)
+        clist.set_column_width(1, 190)
         clist.set_shadow_type(gtk.SHADOW_OUT)
         clist.connect("select_row", self.profile_selection_made)
         clist.show()

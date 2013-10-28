@@ -213,10 +213,12 @@ def collect_networks():
                                 commotion_BSSID_re.match(bss.bssid))
                     nets_dict[(iface.netsh_name, bss.ssid, bss.bssid)] = {
                             "interface": iface,
-                            "auth": net_avail.auth,
-                            "cipher": net_avail.cipher,
                             "ssid": bss.ssid,
                             "bssid": bss.bssid,
+                            "dot11_bss_type": bss.bss_type,
+                            "bss_type": dot11_to_wlan[bss.bss_type],
+                            "auth": net_avail.auth,
+                            "cipher": net_avail.cipher,
                             "quality": bss.link_quality
                             }
             nets.append(net)
