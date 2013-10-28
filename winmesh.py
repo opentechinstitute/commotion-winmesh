@@ -66,22 +66,23 @@ class ConsoleOutput:
         if self.buf != []:
             gobject.idle_add(self.update_buffer)
 
-# FIXME move to workout.py
-def get_netsh_name(network_idx):
-    return workout.net_list[network_idx]["interface"].netsh_name
-
 class WinMeshUI:
 
     def __init__(self, portinghacks=None):
         self.profiles = None
+        self.selected_profile = None
         self._dirty = False
 
         self.portinghacks = portinghacks
         imgdir = 'external/commotion-mesh-applet/'
         self.mesh_status = MeshStatus(self.portinghacks, imagedir=imgdir)
         self.commotion = WindowsCommotionCore(
-                profiledir="".join([workout.get_own_path('/profiles/'),
-                                    "\\"]))
+                profiledir="".join([workout.get_own_path('/profiles/'), "\\"]),
+                #TODO: are these even needed?
+                olsrdpath=workout.olsrd_path,
+                olsrdconf=workout.olsrd_conf_path
+                )
+        workout.refresh_net_list()
         self.init_ui()
 
     def main(self):
