@@ -187,17 +187,26 @@ def collect_networks():
     nets = []
     nets_dict = {}
     for iface in ifaces:
+        wmi_iface = ifaces_by_guid[iface.guid_string]
+        wmi_iface_conf = wmi.WMI().Win32_NetworkAdapterConfiguration(
+                InterfaceIndex=wmi_iface.InterfaceIndex)[0]
+        print "wmi_iface", wmi_iface
+        print "wmi_iface_conf", wmi_iface_conf
         iface.initial_bssid = get_current_net_bssid(iface)
         iface.initial_connection = get_current_connection(iface)
-        iface.netsh_name = ifaces_by_guid[str(iface.guid)].NetConnectionID
-        iface.MAC = ifaces_by_guid[str(iface.guid)].MACAddress
+        iface.netsh_name = wmi_iface.NetConnectionID
+        iface.MAC = wmi_iface.MACAddress
+        iface.IPs = wmi_iface_conf.IPAddress
+        iface.subnet_masks = wmi_iface_conf.IPSubnet
+        iface.gateways = wmi_iface_conf.DefaultIPGateway
+        iface.DHCP_enabled = wmi_iface_conf.DHCPEnabled
         # SSID<one-many>BSSID
         # WW.gWNBL gives BSSIDs with SSID each
+        nets_bss = WindowsWifi.getWirelessNetworkBssList(iface)
         # WW.gWANL gives SSIDs with BSSID count and sec info
+        nets_avail = WindowsWifi.getWirelessAvailableNetworkList(iface)
         # need SSID and sec info to construct profile
         # need SSID, profile, and preferred BSSIDs for WW.connect()
-        nets_bss = WindowsWifi.getWirelessNetworkBssList(iface)
-        nets_avail = WindowsWifi.getWirelessAvailableNetworkList(iface)
         for net_avail in nets_avail:
             net = {"interface": iface,
                    "auth": net_avail.auth,
