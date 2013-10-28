@@ -6,3 +6,6 @@
 	path = external/commotion-mesh-applet
 	url = https://github.com/vitriolix/commotion-mesh-applet.git
 	branch = decompose
+[submodule "PyWiWi"]
+	path = PyWiWi
+	url = git@github.com:jnelson/PyWiWi.git
