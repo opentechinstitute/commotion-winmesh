@@ -151,7 +151,7 @@ class WinMeshUI:
 
     def shutdown(self):
         self.kill_olsrd()
-        workout.restore_previous_profile()
+        workout.apply_rollback_params()
         #workout.shutdown_and_cleanup_network_gui()
 
     def close_application(self, widget):

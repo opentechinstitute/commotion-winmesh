@@ -122,15 +122,16 @@ def get_wlan_profile_xml(PyWiWi_iface, profile_name):
 
 def get_wlan_current_connection(PyWiWi_iface):
     ''' Returns connection attributes if connected, None if not. '''
-    try:
-        iface_state = get_wlan_interface_state(PyWiWi_iface)[1]
-        if iface_state == "wlan_interface_state_connected":
-            cnx, CNX = WindowsWifi.queryInterface(PyWiWi_iface,
-                                                  'current_connection')
-        else:
-            cnx, CNX = None, None
-    except:
+    #try:
+    iface_state = get_wlan_interface_state(PyWiWi_iface)[1]
+    print "current iface state", iface_state
+    if iface_state == "wlan_interface_state_connected":
+        cnx, CNX = WindowsWifi.queryInterface(PyWiWi_iface,
+                                              'current_connection')
+    else:
         cnx, CNX = None, None
+    #except:
+        #cnx, CNX = None, None
     return cnx, CNX
 
 
@@ -139,12 +140,12 @@ def get_current_connection(PyWiWi_iface):
     cnx, CNX = get_wlan_current_connection(PyWiWi_iface)
     if CNX:
         CNXaa = CNX["wlanAssociationAttributes"]
-        result = {'profile_name': CNX["strProfileName"],
-                  'bssid': CNXaa["dot11Bssid"],
-                  'mode': CNX["wlanConnectionMode"],
-                  'bss_type': CNXaa["dot11BssType"],
-                  'phy_type': CNXaa["dot11PhyType"],
-                  'ssid': CNXaa["dot11Ssid"]}
+        result = {"profile_name": CNX["strProfileName"],
+                  "bssid": CNXaa["dot11Bssid"],
+                  "mode": CNX["wlanConnectionMode"],
+                  "dot11_bss_type": CNXaa["dot11BssType"],
+                  "phy_type": CNXaa["dot11PhyType"],
+                  "ssid": CNXaa["dot11Ssid"]}
     else:
         result = CNX
     return result
@@ -278,15 +279,6 @@ def netsh_disconnect_cmd(netsh_spec):
                     "\""])
 
 
-def netsh_delete_profile_cmd(netsh_spec):
-    return "".join(["netsh wlan delete profile",
-                    " name=\"",
-                    netsh_spec["profile_name"],
-                    "\" interface=\"",
-                    netsh_spec["iface_name"],
-                    "\""])
-
-
 def netsh_add_profile(path):
     cmd =  netsh_add_profile_cmd(get_own_path(path))
     print cmd
@@ -324,20 +316,25 @@ def netsh_export_current_profile(iface):
     netsh_export_profile(cnx.profile_name, iface.netsh_name)
 
 
-def save_current_netsh_profile(iface):
+def save_rollback_params(iface, mesh_net):
     fname = prev_profile_path
-    cnx = get_current_connection(iface)
-    if cnx:
-        if cnx["mode"] == "wlan_connection_mode_profile":
-            connectable = {"restore": True,
-                           "profile_name": cnx["profile_name"],
-                           "iface_name": iface.netsh_name,
-                           "delete_after_restore": False
-                           }
-        #else:  # no profile for this connection
-        #TODO: support reconnect via WindowsWifi.connect() when it works
-    if not "connectable" in locals():
-        connectable = {"restore": False}
+    connectable = get_current_connection(iface)
+    if connectable:
+        connectable["interface"] = iface
+        connectable["delete_mesh_after_restore"] = True
+        if connectable["mode"] == "wlan_connection_mode_profile":
+            connectable["restore"] = True
+        elif connectable["mode"] == "wlan_connection_mode_temporary_profile":
+            connectable["restore"] = True
+        else:
+            # "wlan_connection_mode_discovery_secure"
+            # "wlan_connection_mode_discovery_unsecure"
+            connectable["restore"] = False
+    else:
+        connectable = {
+                "restore": False
+                }
+    connectable["mesh_wlan_name"] = mesh_net["ssid"]
     pickle.dump(connectable, open(fname, "w"))
     print "saved at", fname
 
@@ -365,7 +362,7 @@ def make_network(netsh_spec):
 
 
 def make_network2(netsh_spec):
-    print make_wlan_profile(netsh_spec)
+    make_wlan_profile(netsh_spec)
     netsh_add_profile(netsh_spec["ssid"])
     wlan_connect(netsh_spec)
     olsrd = start_olsrd(netsh_spec["interface"].netsh_name)
@@ -379,13 +376,31 @@ def holdup():
         holdup = raw_input("Enter ! to disconnect\n")
 
 
-def restore_previous_profile():
+def netsh_delete_profile_cmd(wlan_profile_name, interface_name):
+    return "".join(["netsh wlan delete profile",
+                    " name=\"",
+                    wlan_profile_name,
+                    "\"",
+                    " interface=\"",
+                    interface_name,
+                    "\""])
+
+def netsh_delete_profile(wlan_profile_name, interface_name):
+    p = subprocess.Popen(netsh_delete_profile_cmd(wlan_profile_name,
+                                                  interface_name),
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    return p.wait()
+
+
+def apply_rollback_params():
     fname = prev_profile_path
     if os.path.isfile(fname):
         try:
             connectable = pickle.load(open(fname, "r"))
+            print "restoring", connectable
             if connectable["restore"]:
-                netsh_connect(connectable)
+                wlan_connect(connectable)
                 print "restored from", fname
             else:
                 print "restore not requested"
@@ -393,6 +408,9 @@ def restore_previous_profile():
             print "Profile restore file exists but restore failed."
     else:
         print "No restore file found"
+    # delete wlan profile store entry for current mesh
+    netsh_delete_profile(connectable["mesh_wlan_name"],
+                         connectable["interface"].netsh_name)
 
 
 def shutdown_and_cleanup_network(netsh_spec):
@@ -403,10 +421,10 @@ def shutdown_and_cleanup_network(netsh_spec):
 
     # show current info for adapter
     # go back to old configuration when ready
-    sd2 = subprocess.call(netsh_delete_profile_cmd(netsh_spec))
-    sd2.wait()
+    #sd2 = subprocess.call(netsh_delete_profile_cmd(netsh_spec))
+    #sd2.wait()
 
-    restore_previous_profile()
+    apply_rollback_params()
 
 def shutdown_and_cleanup_network_gui():
     refresh_net_list()
@@ -425,12 +443,12 @@ def shutdown_and_cleanup_network_cli(netsh_spec):
 
     # show current info for adapter
     # go back to old configuration when ready
-    delete_profile = raw_input("Delete this wireless profile? (Y|N)\n")
-    if delete_profile == 'Y':
-        sd2 = subprocess.call(netsh_delete_profile_cmd(netsh_spec))
-        sd2.wait()
+    #delete_profile = raw_input("Delete this wireless profile? (Y|N)\n")
+    #if delete_profile == 'Y':
+        #sd2 = subprocess.call(netsh_delete_profile_cmd(netsh_spec))
+        #sd2.wait()
 
-    restore_previous_profile()
+    apply_rollback_params()
 
 
 def print_available_networks():
@@ -548,13 +566,13 @@ def connect_or_start_mesh(idx):
     if idx > 0 and idx <= len(net_list):
         # join an existing network
         target_net = net_list[idx - 1]
-        save_current_netsh_profile(target_net["interface"])
+        save_rollback_params(target_net["interface"])
         netsh_spec = make_netsh_spec(target_net)
     elif idx == 0:
         # start pseudo-commotion network (bad bssid)
         #ifaces = WindowsWifi.getWirelessInterfaces()
         target_iface = iface_list[0] #cli_choose_iface(ifaces)
-        save_current_netsh_profile(target_iface)
+        save_rollback_params(target_iface)
         netsh_spec = commotion_default_netsh_spec
         netsh_spec["iface_name"] = target_iface.netsh_name
     olsrd = make_network(netsh_spec)
@@ -566,14 +584,14 @@ def connect_or_start_profiled_mesh(profile):
     #FIXME: Until interface selection in UI, just use first available
     if len(profile["available_nets"]) > 0:
         print "connecting to existing mesh"
+        print profile
         target_net = nets_dict[profile["available_nets"][0]]  # hack
-        save_current_netsh_profile(target_net["interface"])
+        save_rollback_params(target_net["interface"], profile)
         target_net["key_material"] = profile["psk"]
         netsh_spec = make_netsh_spec2(target_net)
     else:
         print "creating new mesh"
         target_iface = iface_list[0]  # hack
-        save_current_netsh_profile(target_iface)
         dummy_net = {
                 "interface": target_iface,
                 "profile_name": profile["ssid"],
@@ -585,6 +603,7 @@ def connect_or_start_profiled_mesh(profile):
                 "cipher": "DOT11_CIPHER_ALGO_CCMP",  #AES
                 "key_material": profile["psk"]
                 }
+        save_rollback_params(target_iface, dummy_net)
         netsh_spec = make_netsh_spec2(dummy_net)
         netsh_spec["iface_name"] = target_iface.netsh_name
     olsrd = make_network2(netsh_spec)

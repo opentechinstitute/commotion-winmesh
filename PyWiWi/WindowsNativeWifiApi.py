@@ -863,7 +863,7 @@ def WlanQueryInterface(hClientHandle, pInterfaceGuid, OpCode):
     """
     func_ref = wlanapi.WlanQueryInterface
     #TODO: Next two lines sketchy due to incomplete implementation.
-    opcode_name = WLAN_INTF_OPCODE_DICT[OpCode]
+    opcode_name = WLAN_INTF_OPCODE_DICT[OpCode.value]
     return_type = WLAN_INTF_OPCODE_TYPE_DICT[opcode_name]
     func_ref.argtypes = [HANDLE,
                          POINTER(GUID),
