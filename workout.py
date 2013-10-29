@@ -1,6 +1,7 @@
 import os
 import io
 import sys
+import socket
 import re
 import inspect
 import pickle
@@ -587,6 +588,19 @@ def connect_or_start_mesh(idx):
         netsh_spec["iface_name"] = target_iface.netsh_name
     olsrd = make_network(netsh_spec)
     return olsrd
+
+
+def generate_ip(ip, netmask, interface):
+    # adapted from commotion-linux-py/commotionc.py
+    netmaskaddr = socket.inet_aton(netmask)
+    baseaddr = socket.inet_aton(ip)
+    m = interface.MAC
+    hwaddr = "".join([m[12], m[13], m[15], m[16]])
+    finaladdr = []
+    for i in range(4):
+        finaladdr.append((ord(hwaddr[i]) & ~ord(netmaskaddr[i])) |
+                (ord(baseaddr[i]) & ord(netmaskaddr[i])))
+    return socket.inet_ntoa("".join([chr(item) for item in finaladdr]))
 
 
 def connect_or_start_profiled_mesh(profile):
