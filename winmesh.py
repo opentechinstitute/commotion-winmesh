@@ -7,6 +7,7 @@ pygtk.require('2.0')
 import gtk
 import workout
 import threading
+import os
 import sys
 import time
 import strings
@@ -67,22 +68,21 @@ class ConsoleOutput:
             gobject.idle_add(self.update_buffer)
 
 class WinMeshUI:
-
     def __init__(self, portinghacks=None):
         self.profiles = None
         self.selected_profile = None
         self._dirty = False
 
         self.portinghacks = portinghacks
-        imgdir = 'external/commotion-mesh-applet/'
-        self.mesh_status = MeshStatus(self.portinghacks, imagedir=imgdir)
+        self.imagedir = 'external/commotion-mesh-applet/'
+        self.mesh_status = MeshStatus(self.portinghacks, imagedir=self.imagedir)
         self.commotion = WindowsCommotionCore(
-                profiledir="".join([workout.get_own_path('/profiles/'), "\\"]),
+                profiledir="".join([workout.get_own_path('/profiles/'), "\\"]), # FIXME we should use all / slashes I think
                 #TODO: are these even needed?
                 olsrdpath=workout.olsrd_path,
                 olsrdconf=workout.olsrd_conf_path
                 )
-        workout.refresh_net_list()
+        if not is_ui_test_mode(): workout.refresh_net_list()
         self.profiles = self.read_profiles()
         self.init_ui()
 
@@ -242,11 +242,11 @@ class WinMeshUI:
 
         notebook = gtk.Notebook()
         notebook.set_tab_pos(gtk.POS_TOP)
-        notebook.show()
+        notebook.show_all()
         self.show_tabs = True
         self.show_border = True
 
-        def add_page(notebook, title, page):
+        def add_page(notebook, title, image, page):
             sw = gtk.ScrolledWindow()
             #sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
             sw.add(page)
@@ -257,9 +257,15 @@ class WinMeshUI:
             #box.show()           
             
             label = gtk.Label(title)
-            
+            vbox = gtk.VBox(False, 0)
+            vbox.set_size_request(60, 60)
+            image.set_size_request(46, 46)
+            vbox.pack_start(image, False, True, 0)
+            vbox.pack_start(label, False, True, 0)
             #notebook.append_page(box, label)
-            notebook.append_page(sw, label)
+            label.show()
+            vbox.show()
+            notebook.append_page(sw, vbox)
 
         #sw = gtk.ScrolledWindow()
         #sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
@@ -342,10 +348,33 @@ class WinMeshUI:
         vbox_profile_controls = get_profile_editor_controls()
         hbox.pack_start(vbox_profile_controls, expand=True, fill=True, padding=10)
         hbox.show()
-        add_page(notebook, "profiles", hbox)        
 
-        #add_page(notebook, "logs", sw)
-        add_page(notebook, "logs", self.textview)
+        TAB_IMAGE_WIDTH = 40
+        TAB_IMAGE_HEIGHT = 40
+
+        pixbuf = gtk.gdk.pixbuf_new_from_file(os.path.join(workout.get_own_path(), 'tabProfiles.png'))
+        pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
+        image = gtk.image_new_from_pixbuf(pixbuf)
+        image.show()
+        add_page(notebook, "Profiles", image, hbox)
+
+        pixbuf = gtk.gdk.pixbuf_new_from_file(os.path.join(workout.get_own_path(), 'tabLog.png'))
+        pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
+        image = gtk.image_new_from_pixbuf(pixbuf)
+        image.show()
+        add_page(notebook, "Logs", image, self.textview)
+
+        pixbuf = gtk.gdk.pixbuf_new_from_file(os.path.join(workout.get_own_path(), 'tabStatus.png'))
+        pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
+        image = gtk.image_new_from_pixbuf(pixbuf)
+        image.show()
+        add_page(notebook, "Status", image, self.textview)
+
+        pixbuf = gtk.gdk.pixbuf_new_from_file(os.path.join(workout.get_own_path(), 'tabHelp.png'))
+        pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
+        image = gtk.image_new_from_pixbuf(pixbuf)
+        image.show()
+        add_page(notebook, "Help", image, self.textview)
 
         vbox = gtk.VBox(False, 10)
 
@@ -411,15 +440,19 @@ def get_portinghacks():
     port.pixbuf_new_from_file = gtk.gdk.pixbuf_new_from_file
     return port
 
+def is_ui_test_mode():
+    return len(sys.argv) > 1 and sys.argv[1] == 'testui'
+
 if __name__ == "__main__":
     app = WinMeshUI(get_portinghacks())
-    if len(sys.argv) > 1 and sys.argv[1] != 'testui':
+
+    if not is_ui_test_mode():
         co = ConsoleOutput(None, app)
         sys.stdout = co 
         sys.stderr = co
 
         app.probe_network()
         app.print_directions()
-    
+
     app.print_profiles()
     app.main()
