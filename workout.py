@@ -610,8 +610,9 @@ def connect_or_start_profiled_mesh(profile):
         print "connecting to existing mesh"
         print profile
         target_net = nets_dict[profile["available_nets"][0]]  # hack
-        save_rollback_params(target_net["interface"], profile)
-        target_net["key_material"] = profile["psk"]
+        target_iface = target_net["interface"]
+        save_rollback_params(target_iface, profile)
+        target_net["key_material"] = profile.get("psk", None)
         netsh_spec = make_netsh_spec2(target_net)
     else:
         print "creating new mesh"
@@ -625,7 +626,7 @@ def connect_or_start_profiled_mesh(profile):
                 "bss_type": "IBSS",
                 "auth": "DOT11_AUTH_ALGO_RSNA_PSK",  #WPA2PSK
                 "cipher": "DOT11_CIPHER_ALGO_CCMP",  #AES
-                "key_material": profile["psk"]
+                "key_material": profile.get("psk", None)
                 }
         save_rollback_params(target_iface, dummy_net)
         netsh_spec = make_netsh_spec2(dummy_net)
