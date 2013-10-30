@@ -237,7 +237,8 @@ def collect_networks():
 
 
 def find_matching_available_nets(ssid, bssid):
-    return [n for n in nets_dict if (n[1] == ssid and n[2] == bssid)]
+    if (nets_dict is not None):        
+        return [n for n in nets_dict if (n[1] == ssid and n[2] == bssid)]
 
 
 def netsh_add_profile_cmd(path):
@@ -556,7 +557,8 @@ def cli_choose_iface(ifaces):
 
 
 net_list = None
-
+#iface_list = None
+#nets_dict = None
 
 def refresh_net_list():
     global net_list
