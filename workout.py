@@ -171,28 +171,21 @@ def iface_has_commotion(PyWiWi_iface):
     return bssid_is_commotion(get_current_net_bssid(PyWiWi_iface))
 
 
-# collect existing networks on wireless interfaces
-def collect_networks():
-    def is_commotion_in_bssList(bssList):
-        for bss in bssList:
-            if commotion_BSSID_re.match(bss.bssid):
-                return True
-        return False
+def collect_interfaces():
     ifaces = WindowsWifi.getWirelessInterfaces()
-    # prepare to get each interface's "common name" and MAC address
     wmi_ifaces = wmi.WMI().Win32_NetworkAdapter()
     ifaces_by_guid = {}
     for wmi_iface in wmi_ifaces:
         ifaces_by_guid[wmi_iface.GUID] = wmi_iface
-    # collect networks and useful metadata
-    nets = []
-    nets_dict = {}
     for iface in ifaces:
         wmi_iface = ifaces_by_guid[iface.guid_string]
         wmi_iface_conf = wmi.WMI().Win32_NetworkAdapterConfiguration(
                 InterfaceIndex=wmi_iface.InterfaceIndex)[0]
-        print "wmi_iface", wmi_iface
-        print "wmi_iface_conf", wmi_iface_conf
+        # functions needed to restore initial state
+        iface.EnableDHCP = wmi_iface_conf.EnableDHCP
+        iface.EnableStatic = wmi_iface_conf.EnableStatic
+        iface.SetGateways = wmi_iface_conf.SetGateways
+        # preserve initial state
         iface.initial_bssid = get_current_net_bssid(iface)
         iface.initial_connection = get_current_connection(iface)
         iface.netsh_name = wmi_iface.NetConnectionID
@@ -201,6 +194,29 @@ def collect_networks():
         iface.subnet_masks = wmi_iface_conf.IPSubnet
         iface.gateways = wmi_iface_conf.DefaultIPGateway
         iface.DHCP_enabled = wmi_iface_conf.DHCPEnabled
+    return ifaces
+
+
+def get_interface_by_guid(guid):
+    ifaces = collect_interfaces()
+    for iface in ifaces:
+        if iface.guid_string == guid:
+            return iface
+    raise Exception("Requested network interface not present")
+
+
+# collect existing networks on wireless interfaces
+def collect_networks():
+    # collect networks and useful metadata
+    def is_commotion_in_bssList(bssList):
+        for bss in bssList:
+            if commotion_BSSID_re.match(bss.bssid):
+                return True
+        return False
+    ifaces = collect_interfaces()
+    nets = []
+    nets_dict = {}
+    for iface in ifaces:
         # SSID<one-many>BSSID
         # WW.gWNBL gives BSSIDs with SSID each
         nets_bss = WindowsWifi.getWirelessNetworkBssList(iface)
@@ -232,7 +248,6 @@ def collect_networks():
                             "quality": bss.link_quality
                             }
             nets.append(net)
-    #nets = [net for net in nets if net["commotion"]]
     return nets, ifaces, nets_dict
 
 
@@ -331,11 +346,13 @@ def save_rollback_params(iface, mesh_net):
     fname = prev_profile_path
     connectable = get_current_connection(iface)
     if connectable:
-        connectable["interface"] = iface
-        connectable["delete_mesh_after_restore"] = True
+        print "connectable mode", connectable["mode"]
         if connectable["mode"] == "wlan_connection_mode_profile":
             connectable["restore"] = True
         elif connectable["mode"] == "wlan_connection_mode_temporary_profile":
+            connectable["restore"] = True
+        elif connectable["mode"] == "wlan_connection_mode_auto":
+            # will reconnect itself but maybe not with good IP settings
             connectable["restore"] = True
         else:
             # "wlan_connection_mode_discovery_secure"
@@ -345,12 +362,21 @@ def save_rollback_params(iface, mesh_net):
         connectable = {
                 "restore": False
                 }
+    connectable["delete_mesh_after_restore"] = True
     connectable["mesh_wlan_name"] = mesh_net["ssid"]
+    connectable["interface"] = {
+            "guid": iface.guid_string,
+            "DHCP_enabled": iface.DHCP_enabled,
+            "IPs": iface.IPs,
+            "subnet_masks": iface.subnet_masks,
+            "gateways": iface.gateways
+            }
+    print "connectable", connectable
     pickle.dump(connectable, open(fname, "w"))
     print "saved at", fname
 
 
-def wlan_connect(spec):
+def wlan_connect(iface, spec):
     # PyWiWi.WindowsWifi.connect() only works reliably in profile mode.
     #   So we use that. We need it because the netsh wlan connect doesn't
     #   allow BSSID specification.
@@ -361,7 +387,7 @@ def wlan_connect(spec):
             "bssType": spec["dot11_bss_type"],
             "flags": 0}
     print "about to connect", cnxp
-    result = WindowsWifi.connect(spec["interface"], cnxp)
+    result = WindowsWifi.connect(iface, cnxp)
 
 
 def make_network(netsh_spec):
@@ -372,10 +398,75 @@ def make_network(netsh_spec):
     return olsrd
 
 
-def make_network2(netsh_spec):
+def netsh_set_ip_cmd(netsh_name,
+                     enable_DHCP,
+                     ip=None,
+                     subnet_mask=None):
+    if enable_DHCP == False:
+        source = "static"
+        address = "".join([" ",
+                "addr=", ip,
+                "mask=", subnet_mask,
+                "gateway=none"])  # set gateways via WMI
+    else:
+        source = "dhcp"
+        address = ""
+    return "".join(["netsh interface ip set address",
+                    " name=\"",
+                    netsh_name,
+                    "\"",
+                    " source=",
+                    source,
+                    address])
+
+
+def netsh_set_ip(iface, enable_DHCP, ip=None, subnet_mask=None):
+    print "netsh_set_ip", enable_DHCP, ip, subnet_mask
+    #p = subprocess.Popen(netsh_set_ip_cmd(iface.netsh_name,
+                                          #enable_DHCP,
+                                          #ip,
+                                          #subnet_mask),
+                         #stdout=subprocess.PIPE,
+                         #stderr=subprocess.PIPE)
+    #return p.wait()
+
+    #pdict = shell.ShellExecuteEx(
+            #fMask=256+64,  # SEE_MASK_NOASYNC + SEE_MASK_NOCLOSEPROCESS
+            #lpVerb="runas",
+            #lpFile="c:\\windows\\system32\\cmd.exe",
+            #lpParameters="".join(["/k ", netsh_set_ip_cmd(
+                            #iface.netsh_name,
+                            #enable_DHCP, ip, subnet_mask)]))
+    #print "pdict", pdict
+    #result = win32event.WaitForSingleObject(pdict["hProcess"], 5000)  # -1
+    #print "shellex result", result
+
+    if not enable_DHCP:
+        iface.EnableStatic([ip], [subnet_mask])
+    else:
+        res = iface.EnableDHCP()
+        print "EnableDHCP status", res
+
+
+def set_ip(iface, enable_DHCP, IPs=None, subnet_masks=None, gateways=None):
+    if enable_DHCP == True:
+        success = netsh_set_ip(iface, enable_DHCP)
+    else:
+        success = netsh_set_ip(iface, enable_DHCP, IPs[0], subnet_masks[0])
+    print "set_ip netsh success", success
+    if gateways:
+        gw = iface.SetGateways(DefaultIPGateway=gateways,
+                GatewayCostMetric=[1]*len(gateways))  #TODO?: bug for someone
+
+
+def make_network2(iface, netsh_spec, profile):
     make_wlan_profile(netsh_spec)
     netsh_add_profile(netsh_spec["ssid"])
-    wlan_connect(netsh_spec)
+    set_ip(iface, enable_DHCP=False,
+                  IPs=[profile["ip"]],
+                  subnet_masks=[profile["netmask"]],
+                  gateways=None)
+    wlan_connect(iface, netsh_spec)
     olsrd = start_olsrd(netsh_spec["interface"].netsh_name)
     return olsrd
 
@@ -410,8 +501,17 @@ def apply_rollback_params():
         try:
             connectable = pickle.load(open(fname, "r"))
             print "restoring", connectable
+            iface = get_interface_by_guid(connectable["interface"]["guid"])
             if connectable["restore"]:
-                wlan_connect(connectable)
+                wlan_connect(iface, connectable)
+                if connectable["interface"]["DHCP_enabled"]:
+                    set_ip(iface, enable_DHCP=True)
+                else:
+                    set_ip(iface,
+                           enable_DHCP=False,
+                           IPs=connectable["interface"]["IPs"],
+                           subnet_masks=connectable["interface"]["subnet_masks"],
+                           gateways=connectable["interface"]["gateways"])
                 print "restored from", fname
             else:
                 print "restore not requested"
@@ -420,9 +520,9 @@ def apply_rollback_params():
     else:
         print "No restore file found"
     # delete wlan profile store entry for current mesh
-    if "connectable" in locals():
+    if "connectable" in locals() and "iface" in locals():
         netsh_delete_profile(connectable["mesh_wlan_name"],
-                             connectable["interface"].netsh_name)
+                             iface.netsh_name)
 
 
 def shutdown_and_cleanup_network(netsh_spec):
@@ -513,7 +613,6 @@ def make_netsh_spec(net):
                                                   netsh_spec)
     else:
         netsh_spec["shared_key"] = ""
-    print "netsh_spec", netsh_spec
     return netsh_spec
 
 
@@ -592,19 +691,6 @@ def connect_or_start_mesh(idx):
     return olsrd
 
 
-def generate_ip(ip, netmask, interface):
-    # adapted from commotion-linux-py/commotionc.py
-    netmaskaddr = socket.inet_aton(netmask)
-    baseaddr = socket.inet_aton(ip)
-    m = interface.MAC
-    hwaddr = "".join([m[12], m[13], m[15], m[16]])
-    finaladdr = []
-    for i in range(4):
-        finaladdr.append((ord(hwaddr[i]) & ~ord(netmaskaddr[i])) |
-                (ord(baseaddr[i]) & ord(netmaskaddr[i])))
-    return socket.inet_ntoa("".join([chr(item) for item in finaladdr]))
-
-
 def connect_or_start_profiled_mesh(profile):
     print "selected mesh", profile["ssid"]
     #FIXME: Until interface selection in UI, just use first available
@@ -633,7 +719,7 @@ def connect_or_start_profiled_mesh(profile):
         save_rollback_params(target_iface, dummy_net)
         netsh_spec = make_netsh_spec2(dummy_net)
         netsh_spec["iface_name"] = target_iface.netsh_name
-    olsrd = make_network2(netsh_spec)
+    olsrd = make_network2(target_iface, netsh_spec, profile)
     return olsrd
 
 
