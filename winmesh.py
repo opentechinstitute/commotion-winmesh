@@ -248,13 +248,9 @@ class WinMeshUI:
 
         def add_page(notebook, title, image, page):
             sw = gtk.ScrolledWindow()
-            #sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+            sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
             sw.add(page)
             sw.show()
-            
-            #box = gtk.VBox(False,10)
-            #box.pack_start(page, expand=True, fill=True, padding=0) 
-            #box.show()           
             
             label = gtk.Label(title)
             vbox = gtk.VBox(False, 0)
@@ -262,28 +258,19 @@ class WinMeshUI:
             image.set_size_request(46, 46)
             vbox.pack_start(image, False, True, 0)
             vbox.pack_start(label, False, True, 0)
-            #notebook.append_page(box, label)
             label.show()
             vbox.show()
             notebook.append_page(sw, vbox)
 
-        #sw = gtk.ScrolledWindow()
-        #sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.textview = gtk.TextView()
         self.textview.set_sensitive(False)
         self.textbuffer = self.textview.get_buffer()
-        #sw.add(self.textview)
-        #sw.show()
         self.textview.show()
 
         hbox = gtk.HBox(False, 10)
         
         # FIXME replace with TreeView: http://www.pygtk.org/pygtk2tutorial/ch-TreeViewWidget.html
-        #clist = gtk.CList(1)
-        #for i in self.get_profile_names():
-            #clist.append([i[0], i[1]])
         clist = gtk.CList(2)
-        #FIXME: hard coded column identities
         for k,v in self.profiles.iteritems():
             clist.append(["@" if v["available"] else "", k])
         clist.set_column_width(0, 10)
@@ -374,7 +361,25 @@ class WinMeshUI:
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
-        add_page(notebook, "Help", image, self.textview)
+
+        vbox = gtk.VBox(False, 10)
+
+        logo_pixbuf = gtk.gdk.pixbuf_new_from_file(os.path.join(workout.get_own_path(), 'commotion_logo.png'))
+        logo = gtk.image_new_from_pixbuf(logo_pixbuf)
+        logo.show()
+        vbox.pack_start(logo)
+
+        blurb = gtk.Label("Commotion is an open-source communication tool that uses mobile phones, computers, and other wireless devices to create decentralized mesh networks.")
+        blurb.set_line_wrap(True)
+        blurb.show()
+        vbox.pack_start(blurb)
+
+        link = gtk.LinkButton("https://commotionwireless.net/", "commotionwireless.net") 
+        link.show()
+        vbox.pack_start(link)
+
+        vbox.show()
+        add_page(notebook, "About", image, vbox)
 
         vbox = gtk.VBox(False, 10)
 
