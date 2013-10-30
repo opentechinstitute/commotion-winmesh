@@ -82,7 +82,7 @@ class WinMeshUI:
                 olsrdpath=workout.olsrd_path,
                 olsrdconf=workout.olsrd_conf_path
                 )
-        workout.refresh_net_list()
+        if not is_ui_test_mode(): workout.refresh_net_list()
         self.profiles = self.read_profiles()
         self.init_ui()
 
@@ -411,9 +411,13 @@ def get_portinghacks():
     port.pixbuf_new_from_file = gtk.gdk.pixbuf_new_from_file
     return port
 
+def is_ui_test_mode():
+    return len(sys.argv) > 1 and sys.argv[1] == 'testui'
+
 if __name__ == "__main__":
     app = WinMeshUI(get_portinghacks())
-    if len(sys.argv) > 1 and sys.argv[1] != 'testui':
+
+    if not is_ui_test_mode():
         co = ConsoleOutput(None, app)
         sys.stdout = co 
         sys.stderr = co
