@@ -339,32 +339,37 @@ class WinMeshUI:
         TAB_IMAGE_WIDTH = 40
         TAB_IMAGE_HEIGHT = 40
 
-        pixbuf = gtk.gdk.pixbuf_new_from_file('tabProfiles.png')
+        pixbuf = gtk.gdk.pixbuf_new_from_file(
+                workout.get_own_path('tabProfiles.png'))
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
         add_page(notebook, "Profiles", image, hbox)
 
-        pixbuf = gtk.gdk.pixbuf_new_from_file('tabLog.png')
+        pixbuf = gtk.gdk.pixbuf_new_from_file(
+                workout.get_own_path('tabLog.png'))
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
         add_page(notebook, "Logs", image, self.textview)
 
-        pixbuf = gtk.gdk.pixbuf_new_from_file('tabStatus.png')
+        pixbuf = gtk.gdk.pixbuf_new_from_file(
+                workout.get_own_path('tabStatus.png'))
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
         add_page(notebook, "Status", image, self.textview)
 
-        pixbuf = gtk.gdk.pixbuf_new_from_file('tabHelp.png')
+        pixbuf = gtk.gdk.pixbuf_new_from_file(
+                workout.get_own_path('tabHelp.png'))
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
 
         vbox = gtk.VBox(False, 10)
 
-        logo_pixbuf = gtk.gdk.pixbuf_new_from_file(os.path.join(workout.get_own_path(), 'commotion_logo.png'))
+        logo_pixbuf = gtk.gdk.pixbuf_new_from_file(
+                workout.get_own_path('commotion_logo.png'))
         logo = gtk.image_new_from_pixbuf(logo_pixbuf)
         logo.show()
         vbox.pack_start(logo)
