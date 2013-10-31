@@ -634,8 +634,8 @@ def cli_choose_iface(ifaces):
 
 
 net_list = None
-#iface_list = None
-#nets_dict = None
+iface_list = None
+nets_dict = None
 
 def refresh_net_list():
     global net_list
