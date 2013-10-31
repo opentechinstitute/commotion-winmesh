@@ -76,7 +76,7 @@ profile_template_path = get_own_path("profile_template.xml.py")
 profile_key_template_path = get_own_path("sharedKey.xml.py")
 prev_profile_path = get_own_path(".prevprofile")
 netsh_export_path = get_own_path(".prevnet.xml")
-olsrd_path = get_own_path(os.path.join(OLSRD_PATH, "olsrd.exe"))
+olsrd_exe_path = get_own_path(os.path.join(OLSRD_PATH, "olsrd.exe"))
 olsrd_conf_path = get_own_path(os.path.join(OLSRD_PATH, "olsrd.conf"))
 olsrd_conf_template_path = get_own_path(os.path.join(OLSRD_PATH, "olsrd.conf.py"))
 
@@ -300,8 +300,8 @@ def netsh_export_profile_cmd(path, profile_name, iface_name):
 
 
 def start_olsrd_cmd(iface_name, olsrd_conf):
-    print "olsrd_path", olsrd_path
-    return "".join([olsrd_path,
+    print "olsrd_exe_path", olsrd_exe_path
+    return "".join([olsrd_exe_path,
                     #" -d 2",
                     " -i \"",
                     iface_name,
