@@ -372,9 +372,8 @@ def save_rollback_params(iface, mesh_net):
             "subnet_masks": iface.subnet_masks,
             "gateways": iface.gateways
             }
-    print "connectable", connectable
     pickle.dump(connectable, open(fname, "w"))
-    print "saved at", fname
+    print "saved restore file at", fname
 
 
 def wlan_connect(iface, spec):
@@ -387,8 +386,8 @@ def wlan_connect(iface, spec):
             "bssidList": [spec["bssid"]],
             "bssType": spec["dot11_bss_type"],
             "flags": 0}
-    print "about to connect", cnxp
     result = WindowsWifi.connect(iface, cnxp)
+    print "connecting to", spec["profile_name"], "; result:", result
 
 
 def make_network(netsh_spec):
@@ -422,31 +421,11 @@ def netsh_set_ip_cmd(netsh_name,
 
 
 def netsh_set_ip(iface, enable_DHCP, ip=None, subnet_mask=None):
-    print "netsh_set_ip", enable_DHCP, ip, subnet_mask
-    #p = subprocess.Popen(netsh_set_ip_cmd(iface.netsh_name,
-                                          #enable_DHCP,
-                                          #ip,
-                                          #subnet_mask),
-                         #stdout=subprocess.PIPE,
-                         #stderr=subprocess.PIPE)
-    #return p.wait()
-
-    #pdict = shell.ShellExecuteEx(
-            #fMask=256+64,  # SEE_MASK_NOASYNC + SEE_MASK_NOCLOSEPROCESS
-            #lpVerb="runas",
-            #lpFile="c:\\windows\\system32\\cmd.exe",
-            #lpParameters="".join(["/k ", netsh_set_ip_cmd(
-                            #iface.netsh_name,
-                            #enable_DHCP, ip, subnet_mask)]))
-    #print "pdict", pdict
-    #result = win32event.WaitForSingleObject(pdict["hProcess"], 5000)  # -1
-    #print "shellex result", result
-
+    print "setting [DHCP active] [IP] [subnet mask]", enable_DHCP, ip, subnet_mask
     if not enable_DHCP:
         iface.EnableStatic([ip], [subnet_mask])
     else:
         res = iface.EnableDHCP()
-        print "EnableDHCP status", res
 
 
 def set_ip(iface, enable_DHCP, IPs=None, subnet_masks=None, gateways=None):
@@ -454,7 +433,6 @@ def set_ip(iface, enable_DHCP, IPs=None, subnet_masks=None, gateways=None):
         success = netsh_set_ip(iface, enable_DHCP)
     else:
         success = netsh_set_ip(iface, enable_DHCP, IPs[0], subnet_masks[0])
-    print "set_ip netsh success", success
     if gateways:
         gw = iface.SetGateways(DefaultIPGateway=gateways,
                 GatewayCostMetric=[1]*len(gateways))  #TODO?: bug for someone
@@ -641,7 +619,6 @@ def make_netsh_spec2(net):
                 netsh_spec)
     else:
         netsh_spec["shared_key"] = ""
-    print "netsh_spec", netsh_spec
     return netsh_spec
 
 
@@ -674,37 +651,18 @@ def get_ssid_from_net_list(idx):
     return net_list[idx]["bss_list"][0]["SSID"]
 
 
-def connect_or_start_mesh(idx):
-    #refresh_net_list()
-    if idx > 0 and idx <= len(net_list):
-        # join an existing network
-        target_net = net_list[idx - 1]
-        save_rollback_params(target_net["interface"])
-        netsh_spec = make_netsh_spec(target_net)
-    elif idx == 0:
-        # start pseudo-commotion network (bad bssid)
-        #ifaces = WindowsWifi.getWirelessInterfaces()
-        target_iface = iface_list[0] #cli_choose_iface(ifaces)
-        save_rollback_params(target_iface)
-        netsh_spec = commotion_default_netsh_spec
-        netsh_spec["iface_name"] = target_iface.netsh_name
-    olsrd = make_network(netsh_spec)
-    return olsrd
-
-
 def connect_or_start_profiled_mesh(profile):
     print "selected mesh", profile["ssid"]
     #FIXME: Until interface selection in UI, just use first available
     if len(profile["available_nets"]) > 0:
         print "connecting to existing mesh"
-        print profile
         target_net = nets_dict[profile["available_nets"][0]]  # hack
         target_iface = target_net["interface"]
         save_rollback_params(target_iface, profile)
         target_net["key_material"] = profile.get("psk", None)
         netsh_spec = make_netsh_spec2(target_net)
     else:
-        print "creating new mesh"
+        print "creating new mesh", profile["ssid"]
         target_iface = iface_list[0]  # hack
         dummy_net = {
                 "interface": target_iface,
