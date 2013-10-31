@@ -83,7 +83,6 @@ class WinMeshUI:
                 )
         if not is_ui_test_mode(): workout.refresh_net_list()
         self.profiles = self.read_profiles()
-        print "profiles: %s" % self.profiles
         self.init_ui()
         
 
@@ -214,7 +213,6 @@ class WinMeshUI:
         return profiles
 
     def read_profiles(self):
-        print "read_profiles"
         profiles = self.commotion.readProfiles()
         profiles = self.annotate_profiles(profiles)
         return profiles
@@ -248,9 +246,6 @@ class WinMeshUI:
 
     def print_directions(self):
         print "\n\nTo join a network enter it's number below.  To create a network, enter 0 below."
-
-    def probe_network(self):
-        workout.print_available_networks()
 
     def changed(self, changedtext):
         self.set_dirty_state(True)
@@ -512,8 +507,10 @@ if __name__ == "__main__":
         sys.stdout = co 
         sys.stderr = co
 
-        app.probe_network()
-        app.print_directions()
+        workout.refresh_net_list()
 
-    app.print_profiles()
+    # TODO cli mode
+    #app.print_directions()
+    #workout.print_available_networks()
+
     app.main()
