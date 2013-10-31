@@ -46,7 +46,11 @@ Platform: Windows 7 Professional
 
 1. Install [PyGTK](http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.24/) using an all-in-one installer
 
-1. Instapp pyjavapropoeries via pip
+1. Install pip via these directions: [Install or Upgrade pip](http://www.pip-installer.org/en/latest/installing.html#install-or-upgrade-pip)
+
+1. Install pyjavaproperties via pip: `pip install pyjavaproperties`
+
+1. Install pyinstaller via pip: `pip install pyinstaller`
 
 We also depend on the [winreg](http://docs.python.org/2/library/_winreg.html) and
 [ctypes](http://docs.python.org/2/library/ctypes.html) Python extensions, but these
@@ -59,17 +63,3 @@ easiest to put the olsrd.exe and the plugin dll files in with the main script.
 Give an invalid invocation and olsrd.exe will provide help. For now, the main
 script references the olsrd.conf file locally. Normally it would go in
 \Windows
-
-###workout.py
-Goal: workout.py is roughly tending toward [olsrd/files/olsrd-adhoc-setup](https://github.com/opentechinstitute/olsrd/blob/release-0.6.5.4/files/olsrd-adhoc-setup)
-
-##Using workout.py
-If you have a network profile called "commotion-wireless.net", you should rename
-it so we don't overwrite it.
-
-In the console, navigate to the local repo. ``python workout.py`` will get 
-you started with a series of decisions. Right now the only option that 
-really works is 0 (make a new network). You'll then choose the interface you
-want to use, and everything else is automatic. When there are no errors, the
-olsrd display keeps the rest of the flow offscreen, so Ctrl-C is the only way
-out.
