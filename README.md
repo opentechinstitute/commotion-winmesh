@@ -46,6 +46,8 @@ Platform: Windows 7 Professional
 
 1. Install [PyGTK](http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.24/) using an all-in-one installer
 
+1. Install setuptools via these directions: [Install or Upgrade Setuptools](http://www.pip-installer.org/en/latest/installing.html#install-or-upgrade-setuptools)
+
 1. Install pip via these directions: [Install or Upgrade pip](http://www.pip-installer.org/en/latest/installing.html#install-or-upgrade-pip)
 
 1. Install pyjavaproperties via pip: `pip install pyjavaproperties`
