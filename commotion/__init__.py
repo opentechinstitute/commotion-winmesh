@@ -68,6 +68,7 @@ class WindowsCommotionCore(CommotionCore):
                     profile['ip'] + ' and subnet ' + profile['netmask'])
             # If this profile is detected on an interface, use that interface;
             #   otherwise use the default.
+            # FIXME we should try to not mix network code into the file loader code
             matched_nets = workout.find_matching_available_nets(profile["ssid"],
                                                                 profile["bssid"])
             if len(matched_nets) > 0:

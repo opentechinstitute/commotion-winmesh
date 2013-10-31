@@ -71,20 +71,21 @@ class WinMeshUI:
     def __init__(self, portinghacks=None):
         self.profiles = None
         self.selected_profile = None
-        self._dirty = False
-
+        self.dirty = False
         self.portinghacks = portinghacks
         self.imagedir = 'external/commotion-mesh-applet/'
         self.mesh_status = MeshStatus(self.portinghacks, imagedir=self.imagedir)
         self.commotion = WindowsCommotionCore(
-                profiledir="".join([workout.get_own_path('/profiles/'), "\\"]), # FIXME we should use all / slashes I think, but it breaks the linux build
+                profiledir="".join([workout.get_own_path('/profiles/'), "/"]), 
                 #TODO: are these even needed?
                 olsrdpath=workout.olsrd_path,
                 olsrdconf=workout.olsrd_conf_path
                 )
         if not is_ui_test_mode(): workout.refresh_net_list()
         self.profiles = self.read_profiles()
+        print "profiles: %s" % self.profiles
         self.init_ui()
+        
 
     def main(self):
         gtk.gdk.threads_init()
@@ -109,14 +110,34 @@ class WinMeshUI:
             button.set_label(strings.TOGGLE_TEXT_START)
             self.shutdown()
 
-    def profile_selection_made(self, clist, row, col, event, data=None):
+    def _profile_selection_made(self, clist, row, col, event, data=None):
         text = clist.get_text(row, 1)  #FIXME: hard coded column for name
-        print "profile selection made", text
+        print "profile selection made: %s" % text
         self.selected_profile = self.profiles[text]
         self.display_profile_in_editor(self.profiles[text])
-
+        self.set_dirty_state(False)
+        
+    def profile_selection_made(self, clist, row, col, event, data=None):
+        #if (self.dirty):
+        #    print "WARN USER: you will lose changes if you click away"
+        #    message = gtk.MessageDialog(type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_OK)
+    	#    message.set_markup("You will lose changes if you click away.")
+    	#    message.run()
+        #    pass # FIXME warn the user they will lose changes
+        # TODO how do i reset the selection to the previous if they cancel?
+        #       probably we just have to call clist.select_row?
+        #else:
+            self._profile_selection_made(clist, row, col, event, data)
+            
     def save_profile_clicked(self, button):
-        print "button clicked"
+        # FIXME update profile object and call updateProfile in commotionc
+        self.update_profile_from_editor(self.selected_profile)
+        self.commotion.updateProfile(self.get_selected_profile_name(), self.selected_profile)
+        self.set_dirty_state(False)
+
+    def undo_changes_clicked(self, button):
+        self.display_profile_in_editor(self.selected_profile)
+        self.set_dirty_state(False)
 
     def display_profile_in_editor(self, profile):
         self.tbSSID.set_text(profile["ssid"])
@@ -126,6 +147,15 @@ class WinMeshUI:
         self.cbIPGenerate.set_active((profile["ipgenerate"] == "true"))
         self.tbNetmask.set_text(profile["netmask"])
         self.tbDNS.set_text(profile["dns"])
+
+    def update_profile_from_editor(self, profile):
+        profile["ssid"] = self.tbSSID.get_text()
+        profile["bssid"] = self.tbBSSID.get_text()
+        profile["channel"] = self.tbChannel.get_text()
+        profile["ip"] = self.tbIP.get_text()
+        profile["ipgenerate"] = "true" if self.cbIPGenerate.get_active() else "false"
+        profile["netmask"] = self.tbNetmask.get_text()
+        profile["dns"] = self.tbDNS.get_text()
 
     def kill_olsrd(self):
         try: 
@@ -184,6 +214,7 @@ class WinMeshUI:
         return profiles
 
     def read_profiles(self):
+        print "read_profiles"
         profiles = self.commotion.readProfiles()
         profiles = self.annotate_profiles(profiles)
         return profiles
@@ -191,6 +222,11 @@ class WinMeshUI:
     def refresh_profiles(self):
         self.clear_profiles()
         self.profiles = self.read_profiles()
+        
+    def get_selected_profile_name(self):
+        file_name = self.selected_profile['filename']
+        profile_name = os.path.split(re.sub('\.profile$', '', file_name))[1]
+        return profile_name
 
     def get_profile_names(self):
         if self.profiles is None:
@@ -217,11 +253,15 @@ class WinMeshUI:
         workout.print_available_networks()
 
     def changed(self, changedtext):
-        self.dirty()
+        self.set_dirty_state(True)
 
-    def dirty(self):
-        self._dirty = True
-        self.save_button.set_sensitive(True)
+    def set_dirty_state(self, state):
+        self.dirty = state
+        self.update_buttons_state()
+
+    def update_buttons_state(self):
+        self.save_button.set_sensitive(self.dirty)
+        self.undo_changes_button.set_sensitive(self.dirty)
 
     def init_ui(self):
         window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -247,11 +287,6 @@ class WinMeshUI:
         self.show_border = True
 
         def add_page(notebook, title, image, page):
-            sw = gtk.ScrolledWindow()
-            sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-            sw.add(page)
-            sw.show()
-            
             label = gtk.Label(title)
             vbox = gtk.VBox(False, 0)
             vbox.set_size_request(60, 60)
@@ -260,7 +295,7 @@ class WinMeshUI:
             vbox.pack_start(label, False, True, 0)
             label.show()
             vbox.show()
-            notebook.append_page(sw, vbox)
+            notebook.append_page(page, vbox)
 
         self.textview = gtk.TextView()
         self.textview.set_sensitive(False)
@@ -323,13 +358,25 @@ class WinMeshUI:
             self.tbDNS = gtk.Entry()
             self.tbDNS.connect("changed", self.changed)
             add_item(vbox, label, self.tbDNS)
+            
+            hbox = gtk.HBox(False, 10)
+            self.save_button = gtk.Button("Save Profile")
+            self.save_button.set_sensitive(False)
+            self.save_button.connect("clicked", self.save_profile_clicked)
+            hbox.pack_start(self.save_button)
 
-            #self.save_button = gtk.Button("save profile")
-            #self.save_button.set_sensitive(False)
-            #self.save_button.connect("clicked", self.save_profile_clicked)
-            #vbox.pack_end(self.save_button)
+            self.undo_changes_button = gtk.Button("Undo Changes")
+            self.undo_changes_button.set_sensitive(False)
+            self.undo_changes_button.connect("clicked", self.undo_changes_clicked)
+            hbox.pack_start(self.undo_changes_button)
+
+            vbox.pack_end(hbox, expand=False, fill=False, padding=0)
 
             vbox.show_all()
+            
+            # load first profile        
+            clist.select_row(0, 0)
+
             return vbox
 
         vbox_profile_controls = get_profile_editor_controls()
@@ -344,6 +391,7 @@ class WinMeshUI:
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
+        
         add_page(notebook, "Profiles", image, hbox)
 
         pixbuf = gtk.gdk.pixbuf_new_from_file(
@@ -358,7 +406,9 @@ class WinMeshUI:
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
-        add_page(notebook, "Status", image, self.textview)
+        label = gtk.Label("Status goes here...")
+        label.show()
+        add_page(notebook, "Status", image, label)
 
         pixbuf = gtk.gdk.pixbuf_new_from_file(
                 workout.get_own_path('tabHelp.png'))
@@ -384,6 +434,7 @@ class WinMeshUI:
         vbox.pack_start(link)
 
         vbox.show()
+            
         add_page(notebook, "About", image, vbox)
 
         vbox = gtk.VBox(False, 10)
