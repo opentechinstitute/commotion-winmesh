@@ -25,7 +25,10 @@ On a windows machine, run:
 
 ``pyinstaller winmesh.py``
 
-when that completes, copy the extra files from dist/ into dist/winmesh/
+To build a release build that hides the console, run:
+
+``pyinstaller --noconsole winmesh.py``
+
 
 __TODO__
 
