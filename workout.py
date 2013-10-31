@@ -71,13 +71,14 @@ def get_own_path(extends_with=None):
     ext_path = os.path.abspath("".join([base_path, sep, extends_with]))
     return ext_path
 
+OLSRD_PATH = "olsrd"
 profile_template_path = get_own_path("profile_template.xml.py")
 profile_key_template_path = get_own_path("sharedKey.xml.py")
 prev_profile_path = get_own_path(".prevprofile")
 netsh_export_path = get_own_path(".prevnet.xml")
-olsrd_path = get_own_path("olsrd.exe")
-olsrd_conf_path = get_own_path("olsrd.conf")
-olsrd_conf_template_path = get_own_path("olsrd.conf.py")
+olsrd_path = get_own_path(os.path.join(OLSRD_PATH, "olsrd.exe"))
+olsrd_conf_path = get_own_path(os.path.join(OLSRD_PATH, "olsrd.conf"))
+olsrd_conf_template_path = get_own_path(os.path.join(OLSRD_PATH, "olsrd.conf.py"))
 
 
 def write_file(path, filestring):

@@ -382,7 +382,7 @@ class WinMeshUI:
         TAB_IMAGE_HEIGHT = 40
 
         pixbuf = gtk.gdk.pixbuf_new_from_file(
-                workout.get_own_path('tabProfiles.png'))
+                workout.get_own_path(os.path.join('images', 'tabProfiles.png')))
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
@@ -390,14 +390,14 @@ class WinMeshUI:
         add_page(notebook, "Profiles", image, hbox)
 
         pixbuf = gtk.gdk.pixbuf_new_from_file(
-                workout.get_own_path('tabLog.png'))
+                workout.get_own_path(os.path.join('images', 'tabLog.png')))
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
         add_page(notebook, "Logs", image, self.textview)
 
         pixbuf = gtk.gdk.pixbuf_new_from_file(
-                workout.get_own_path('tabStatus.png'))
+                workout.get_own_path(os.path.join('images', 'tabStatus.png')))
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
@@ -406,7 +406,7 @@ class WinMeshUI:
         add_page(notebook, "Status", image, label)
 
         pixbuf = gtk.gdk.pixbuf_new_from_file(
-                workout.get_own_path('tabHelp.png'))
+                workout.get_own_path(os.path.join('images', 'tabHelp.png')))
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
@@ -414,7 +414,7 @@ class WinMeshUI:
         vbox = gtk.VBox(False, 10)
 
         logo_pixbuf = gtk.gdk.pixbuf_new_from_file(
-                workout.get_own_path('commotion_logo.png'))
+                workout.get_own_path(os.path.join('images', 'commotion_logo.png')))
         logo = gtk.image_new_from_pixbuf(logo_pixbuf)
         logo.show()
         vbox.pack_start(logo)
@@ -504,8 +504,8 @@ if __name__ == "__main__":
 
     if not is_ui_test_mode():
         co = ConsoleOutput(None, app)
-        sys.stdout = co 
-        sys.stderr = co
+        #sys.stdout = co 
+        #sys.stderr = co
 
         workout.refresh_net_list()
 
