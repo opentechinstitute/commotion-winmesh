@@ -79,8 +79,6 @@ class WindowsCommotionCore(CommotionCore):
             profile['ip'] = self._generate_ip(profile['ip'],
                                               profile['netmask'],
                                               mac)
-            self.updateProfile(profname, {'ipgenerate': 'false',
-                                          'ip': profile['ip']})
         if not 'bssid' in profile:
             # Include note in default config file that bssid parameter is allowed,
             #   but should almost never be used
