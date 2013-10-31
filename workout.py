@@ -64,8 +64,9 @@ def get_own_path(extends_with=None):
     else:
         extends_with = ""
         sep = ""
-    base_path = os.path.dirname(os.path.abspath(inspect.getfile(
-            inspect.currentframe())))
+    base_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    #base_path = os.path.dirname(os.path.abspath(inspect.getfile(
+    #        inspect.currentframe())))
     ext_path = os.path.abspath("".join([base_path, sep, extends_with]))
     return ext_path
 
