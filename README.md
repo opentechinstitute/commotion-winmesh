@@ -36,6 +36,9 @@ Platform: Windows 7 Professional
 1. Install the python.org [Python
    2.7.5](http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi)
 
+
+1. setup your path variables, e.g. adding C:\Python27 and C:\Python27\Scripts
+
 1. Install the
    [pywin32](http://sourceforge.net/projects/pywin32/files/?source=navbar) Python
    extension
