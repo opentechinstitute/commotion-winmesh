@@ -39,6 +39,7 @@ commotion_default_cnxp = {
         }
 
 profile_extension = ".xml"
+olsrd_conf_extension = ".olsrd.conf"
 
 dot11_to_wlan = {
         "dot11_BSS_type_infrastructure": "ESS",
@@ -76,6 +77,7 @@ prev_profile_path = get_own_path(".prevprofile")
 netsh_export_path = get_own_path(".prevnet.xml")
 olsrd_path = get_own_path("olsrd.exe")
 olsrd_conf_path = get_own_path("olsrd.conf")
+olsrd_conf_template_path = get_own_path("olsrd.conf.py")
 
 
 def write_file(path, filestring):
@@ -107,6 +109,15 @@ def make_wlan_profile(netsh_spec):
                                             profile_extension]))
     create_file_from_template(profile_template_path, xml_path, netsh_spec)
     return xml_path
+
+
+def make_olsrd_conf(iface_name, profile):
+    conf_path = get_own_path("".join([profile["ssid"], olsrd_conf_extension]))
+    params = {"ip": profile["ip"],
+              "netmask": profile["netmask"],
+              "interface_name": iface_name}
+    create_file_from_template(olsrd_conf_template_path, conf_path, params)
+    return conf_path
 
 
 def wlan_dot11bssid_to_string(dot11Bssid):
@@ -287,7 +298,7 @@ def netsh_export_profile_cmd(path, profile_name, iface_name):
                     "\""])
 
 
-def start_olsrd_cmd(iface_name):
+def start_olsrd_cmd(iface_name, olsrd_conf):
     print "olsrd_path", olsrd_path
     return "".join([olsrd_path,
                     #" -d 2",
@@ -295,7 +306,7 @@ def start_olsrd_cmd(iface_name):
                     iface_name,
                     "\"",
                     " -f \"",
-                    olsrd_conf_path,
+                    olsrd_conf,
                     "\""])
 
 
@@ -331,8 +342,8 @@ def netsh_export_profile(profile_name, iface_name):
     return netsh.wait()
 
 
-def start_olsrd(iface_name):
-    olsrd = subprocess.Popen(start_olsrd_cmd(iface_name),
+def start_olsrd(iface_name, olsrd_conf=olsrd_conf_path):
+    olsrd = subprocess.Popen(start_olsrd_cmd(iface_name, olsrd_conf),
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
     return olsrd
@@ -445,8 +456,9 @@ def make_network2(iface, netsh_spec, profile):
                   IPs=[profile["ip"]],
                   subnet_masks=[profile["netmask"]],
                   gateways=None)
+    olsrd_conf = make_olsrd_conf(iface.netsh_name, profile)
     wlan_connect(iface, netsh_spec)
-    olsrd = start_olsrd(netsh_spec["interface"].netsh_name)
+    olsrd = start_olsrd(netsh_spec["interface"].netsh_name, olsrd_conf)
     return olsrd
 
 
