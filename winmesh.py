@@ -77,7 +77,7 @@ class WinMeshUI:
         self.imagedir = 'external/commotion-mesh-applet/'
         self.mesh_status = MeshStatus(self.portinghacks, imagedir=self.imagedir)
         self.commotion = WindowsCommotionCore(
-                profiledir="".join([workout.get_own_path('/profiles/'), "\\"]), # FIXME we should use all / slashes I think
+                profiledir="".join([workout.get_own_path('/profiles/'), "/"]),
                 #TODO: are these even needed?
                 olsrdpath=workout.olsrd_path,
                 olsrdconf=workout.olsrd_conf_path
@@ -352,25 +352,25 @@ class WinMeshUI:
         TAB_IMAGE_WIDTH = 40
         TAB_IMAGE_HEIGHT = 40
 
-        pixbuf = gtk.gdk.pixbuf_new_from_file(os.path.join(workout.get_own_path(), 'tabProfiles.png'))
+        pixbuf = gtk.gdk.pixbuf_new_from_file('tabProfiles.png')
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
         add_page(notebook, "Profiles", image, hbox)
 
-        pixbuf = gtk.gdk.pixbuf_new_from_file(os.path.join(workout.get_own_path(), 'tabLog.png'))
+        pixbuf = gtk.gdk.pixbuf_new_from_file('tabLog.png')
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
         add_page(notebook, "Logs", image, self.textview)
 
-        pixbuf = gtk.gdk.pixbuf_new_from_file(os.path.join(workout.get_own_path(), 'tabStatus.png'))
+        pixbuf = gtk.gdk.pixbuf_new_from_file('tabStatus.png')
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
         add_page(notebook, "Status", image, self.textview)
 
-        pixbuf = gtk.gdk.pixbuf_new_from_file(os.path.join(workout.get_own_path(), 'tabHelp.png'))
+        pixbuf = gtk.gdk.pixbuf_new_from_file('tabHelp.png')
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
