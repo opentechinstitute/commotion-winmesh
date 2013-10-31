@@ -78,7 +78,7 @@ class WinMeshUI:
         self.commotion = WindowsCommotionCore(
                 profiledir="".join([workout.get_own_path('/profiles/'), "/"]), 
                 #TODO: are these even needed?
-                olsrdpath=workout.olsrd_path,
+                olsrdpath=workout.olsrd_exe_path,
                 olsrdconf=workout.olsrd_conf_path
                 )
         if not is_ui_test_mode(): workout.refresh_net_list()
