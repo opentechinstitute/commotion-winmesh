@@ -489,25 +489,23 @@ def netsh_delete_profile(wlan_profile_name, interface_name):
 def apply_rollback_params():
     fname = prev_profile_path
     if os.path.isfile(fname):
-        try:
-            connectable = pickle.load(open(fname, "r"))
-            print "restoring", connectable
-            iface = get_interface_by_guid(connectable["interface"]["guid"])
-            if connectable["restore"]:
-                wlan_connect(iface, connectable)
-                if connectable["interface"]["DHCP_enabled"]:
-                    set_ip(iface, enable_DHCP=True)
-                else:
-                    set_ip(iface,
-                           enable_DHCP=False,
-                           IPs=connectable["interface"]["IPs"],
-                           subnet_masks=connectable["interface"]["subnet_masks"],
-                           gateways=connectable["interface"]["gateways"])
-                print "restored from", fname
+        print "restoring from", fname
+        connectable = pickle.load(open(fname, "r"))
+        iface = get_interface_by_guid(connectable["interface"]["guid"])
+        if connectable["restore"]:
+            if connectable["mode"] == "wlan_connection_mode_auto":
+                connectable["mode"] = "wlan_connection_mode_profile"
+            wlan_connect(iface, connectable)
+            if connectable["interface"]["DHCP_enabled"]:
+                set_ip(iface, enable_DHCP=True)
             else:
-                print "restore not requested"
-        except:
-            print "Profile restore file exists but restore failed."
+                set_ip(iface,
+                       enable_DHCP=False,
+                       IPs=connectable["interface"]["IPs"],
+                       subnet_masks=connectable["interface"]["subnet_masks"],
+                       gateways=connectable["interface"]["gateways"])
+        else:
+            print "restore not requested"
     else:
         print "No restore file found"
     # delete wlan profile store entry for current mesh
