@@ -77,7 +77,7 @@ class WinMeshUI:
         self.imagedir = 'external/commotion-mesh-applet/'
         self.mesh_status = MeshStatus(self.portinghacks, imagedir=self.imagedir)
         self.commotion = WindowsCommotionCore(
-                profiledir="".join([workout.get_own_path('/profiles/'), "/"]),
+                profiledir="".join([workout.get_own_path('/profiles/'), "\\"]), # FIXME we should use all / slashes I think, but it breaks the linux build
                 #TODO: are these even needed?
                 olsrdpath=workout.olsrd_path,
                 olsrdconf=workout.olsrd_conf_path
