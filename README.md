@@ -23,11 +23,11 @@ where you want to work. The OTI version will work just as well.
 
 On a windows machine, run:
 
-``pyinstaller winmesh.py``
+``pyinstaller winmesh.spec``
 
 To build a release build that hides the console, run:
 
-``pyinstaller --noconsole winmesh.py``
+``pyinstaller --noconsole winmesh.spec``
 
 
 __TODO__
