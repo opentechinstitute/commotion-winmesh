@@ -204,7 +204,7 @@ def collect_interfaces():
         iface.EnableStatic = wmi_iface_conf.EnableStatic
         iface.SetGateways = wmi_iface_conf.SetGateways
         # preserve initial state
-        iface.initial_bssid = get_current_net_bssid(iface)
+        #iface.initial_bssid = get_current_net_bssid(iface)
         iface.initial_connection = get_current_connection(iface)
         iface.netsh_name = wmi_iface.NetConnectionID
         iface.MAC = wmi_iface.MACAddress
@@ -362,7 +362,7 @@ def netsh_export_current_profile(iface):
 
 def save_rollback_params(iface, mesh_net):
     fname = prev_profile_path
-    connectable = get_current_connection(iface)
+    connectable = iface.initial_connection
     if connectable:
         print "connectable mode", connectable["mode"]
         if connectable["mode"] == "wlan_connection_mode_profile":
