@@ -10,7 +10,7 @@ SmartGateway yes
 
 Hna4
 {{
-        {ip} {netmask}
+        {masked_ip} {netmask}
 }}
 
 #LoadPlugin "lib/arprefresh/olsrd_arprefresh.dll"

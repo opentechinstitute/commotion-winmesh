@@ -115,7 +115,11 @@ def make_wlan_profile(netsh_spec):
 
 def make_olsrd_conf(iface_name, profile):
     conf_path = get_own_path("".join([profile["ssid"], olsrd_conf_extension]))
-    params = {"ip": profile["ip"],
+    masked_ip = []
+    for ip, mask in zip(profile["ip"].split("."),
+                        profile["netmask"].split(".")):
+        masked_ip.append(str(int(ip) & int(mask)))
+    params = {"masked_ip": '.'.join(masked_ip),
               "netmask": profile["netmask"],
               "interface_name": iface_name}
     create_file_from_template(olsrd_conf_template_path, conf_path, params)
