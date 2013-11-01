@@ -6,7 +6,8 @@ import re
 import inspect
 import pickle
 import subprocess  # for netsh and olsrd
-try:
+import time
+try:  # Windows-specific
     import wmi  # http://timgolden.me.uk/python/wmi/index.html
     from PyWiWi import WindowsWifi
     from PyWiWi import WindowsNativeWifiApi as PWWnw
@@ -72,13 +73,13 @@ def get_own_path(extends_with=None):
     return ext_path
 
 OLSRD_PATH = "olsrd"
-profile_template_path = get_own_path("profile_template.xml.py")
-profile_key_template_path = get_own_path("sharedKey.xml.py")
+profile_template_path = get_own_path("templates/profile_template.xml.py")
+profile_key_template_path = get_own_path("templates/sharedKey.xml.py")
 prev_profile_path = get_own_path(".prevprofile")
 netsh_export_path = get_own_path(".prevnet.xml")
 olsrd_exe_path = get_own_path(os.path.join(OLSRD_PATH, "olsrd.exe"))
 olsrd_conf_path = get_own_path(os.path.join(OLSRD_PATH, "olsrd.conf"))
-olsrd_conf_template_path = get_own_path(os.path.join(OLSRD_PATH, "olsrd.conf.py"))
+olsrd_conf_template_path = get_own_path("templates/olsrd.conf.py")
 
 
 def write_file(path, filestring):
@@ -438,6 +439,7 @@ def netsh_set_ip(iface, enable_DHCP, ip=None, subnet_mask=None):
         iface.EnableStatic([ip], [subnet_mask])
     else:
         res = iface.EnableDHCP()
+        print "result of enabling DHCP", res
 
 
 def set_ip(iface, enable_DHCP, IPs=None, subnet_masks=None, gateways=None):
@@ -497,6 +499,7 @@ def apply_rollback_params():
             if connectable["mode"] == "wlan_connection_mode_auto":
                 connectable["mode"] = "wlan_connection_mode_profile"
             wlan_connect(iface, connectable)
+            time.sleep(3)
             if connectable["interface"]["DHCP_enabled"]:
                 set_ip(iface, enable_DHCP=True)
             else:
