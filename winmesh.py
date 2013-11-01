@@ -394,6 +394,17 @@ class WinMeshUI:
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
+
+        """
+        vbox = gtk.VBox(False, 10)
+        vbox.pack_start(self.textview, True, True, 0)
+        button = gtk.Button("show jsoninfo")
+        button.connect("clicked", self.show_jsoninfo)
+        vbox.pack_start(button, True, True, 0)
+        button.show()
+        vbox.show()
+        add_page(notebook, "Logs", image, vbox)
+        """
         add_page(notebook, "Logs", image, self.textview)
 
         pixbuf = gtk.gdk.pixbuf_new_from_file(
@@ -436,7 +447,7 @@ class WinMeshUI:
 
         box2.pack_start(notebook)
 
-        string = "Available networks:\n\n"
+        string = "\n"
         self.textbuffer.set_text(string)
 
         hbox = gtk.HButtonBox()
@@ -504,8 +515,8 @@ if __name__ == "__main__":
 
     if not is_ui_test_mode():
         co = ConsoleOutput(None, app)
-        #sys.stdout = co 
-        #sys.stderr = co
+        sys.stdout = co
+        sys.stderr = co
 
         workout.refresh_net_list()
 
