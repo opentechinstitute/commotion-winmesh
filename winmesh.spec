@@ -3,9 +3,7 @@ import os
 import sys
 import inspect
 
-#base_path = os.path.dirname(os.path.abspath(sys.argv[0]))
 base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-data_dirs = ['olsrd', 'images', 'profiles']
 
 def make_tree(base_path, subdir):
   path = os.path.join(base_path, subdir)
