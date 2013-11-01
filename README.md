@@ -13,7 +13,8 @@ Platform: Debian Wheezy.
 1. ``> apt-get install dpkg-cross bison flex``
 
 1. Download and unzip [olsrd](http://www.olsr.org/releases/0.6/olsrd-0.6.6.tar.gz)
-where you want to work. The OTI version will work just as well.
+where you want to work. The [OTI olsrd](https://github.com/opentechinstitute/olsrd)
+will work just as well and includes more plugins.
 
 1. Change to the olsrd directory.
 
@@ -60,14 +61,9 @@ Platform: Windows 7 Professional
 
 1. Install pyinstaller via pip: `pip install pyinstaller`
 
-We also depend on the [winreg](http://docs.python.org/2/library/_winreg.html) and
-[ctypes](http://docs.python.org/2/library/ctypes.html) Python extensions, but these
-are built into Python 2.7.
 
 ###olsrd.conf
-- Paths to plugins must be specified relative to olsrd.exe. For now, it's
-easiest to put the olsrd.exe and the plugin dll files in with the main script.
-- In general, you can also specify the olsrd.conf you want in the invocation. 
-Give an invalid invocation and olsrd.exe will provide help. For now, the main
-script references the olsrd.conf file locally. Normally it would go in
-\Windows
+- Paths to plugins must be specified relative to `olsrd.exe`. We keep `olsrd.exe`
+and all the plugin `.dll` files in the `olsrd` subdirectory.
+- The main script generates a new `[ssid].olsrd.conf` file locally for each profile.
+To make changes for all profiles, edit `templates/olsrd.conf.py`.
