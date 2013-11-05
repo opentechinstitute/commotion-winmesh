@@ -68,7 +68,13 @@ and all the plugin `.dll` files in the `olsrd` subdirectory.
 - The main script generates a new `[ssid].olsrd.conf` file locally for each profile.
 To make changes for all profiles, edit `templates/olsrd.conf.py`.
 
-###General notes
-- OLSRd will preemptively disable ICMP redirect processing in the registry on first
-run. It's not an option, and OLSRd doesn't give any advance warning. Afterward, a
-reboot is required.
+###General notes / Issues
+- OLSRd will preemptively disable ICMP redirect processing in the registry on first run. It's not an option, and OLSRd doesn't give any advance warning. Afterward, a reboot is required.
+
+- Windows Firewall will try to block olsrd.exe, you might need to restart the app and try connecting again after approving it
+
+- Windows will make you chose home/work/public when you join the network, this might cause issues
+
+- If the app crashes and you joined a mesh that was configured to have a static IP, you will be left in a "broken" network state, to get back online simply manually set your tcp/ip settings to DHCP
+
+- There may be an issue with the Administrator rights not sticking on first run.  If you have trouble bringing up the mesh, try quitting and restarting
