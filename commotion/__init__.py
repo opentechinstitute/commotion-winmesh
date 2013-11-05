@@ -1,6 +1,6 @@
 import os
 import pyjavaproperties
-import workout
+import core
 import socket
 import re
 from commotion_applet_support import JsonInfo, MeshStatus, PortingHacks
@@ -33,7 +33,7 @@ class WindowsCommotionCore(CommotionCore):
             self.selectedInterface = iface
         else:
             if not self.selectedInterface:
-                self.selectedInterface = workout.iface_list[0]
+                self.selectedInterface = core.iface_list[0]
         return self.selectedInterface
 
     def __generate_ip(self, ip, netmask, mac):
@@ -69,11 +69,11 @@ class WindowsCommotionCore(CommotionCore):
             # If this profile is detected on an interface, use that interface;
             #   otherwise use the default.
             # FIXME we should try to not mix network code into the file loader code
-            matched_nets = workout.find_matching_available_nets(profile["ssid"],
+            matched_nets = core.find_matching_available_nets(profile["ssid"],
                                                                 profile["bssid"])
             if len(matched_nets) > 0:
                 #FIXME: This is a bug in a multi-interface environment
-                mac = workout.nets_dict[matched_nets[0]]["interface"].MAC
+                mac = core.nets_dict[matched_nets[0]]["interface"].MAC
             else:
                 mac = self.selectInterface().MAC
             profile['ip'] = self._generate_ip(profile['ip'],

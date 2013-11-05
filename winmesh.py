@@ -5,7 +5,7 @@ import glib
 import pygtk
 pygtk.require('2.0')
 import gtk
-import workout
+import core
 import threading
 import os
 import sys
@@ -76,12 +76,12 @@ class WinMeshUI:
         self.imagedir = 'external/commotion-mesh-applet/'
         self.mesh_status = MeshStatus(self.portinghacks, imagedir=self.imagedir)
         self.commotion = WindowsCommotionCore(
-                profiledir="".join([workout.get_own_path('/profiles/'), "/"]), 
+                profiledir="".join([core.get_own_path('/profiles/'), "/"]),
                 #TODO: are these even needed?
-                olsrdpath=workout.olsrd_exe_path,
-                olsrdconf=workout.olsrd_conf_path
+                olsrdpath=core.olsrd_exe_path,
+                olsrdconf=core.olsrd_conf_path
                 )
-        if not is_ui_test_mode(): workout.refresh_net_list()
+        if not is_ui_test_mode(): core.refresh_net_list()
         self.profiles = self.read_profiles()
         self.init_ui()
         
@@ -95,7 +95,7 @@ class WinMeshUI:
             if self.selected_profile is not None:
                 button.set_label(strings.TOGGLE_TEXT_STOP)
 
-                self.olsrd_proc = workout.connect_or_start_profiled_mesh(
+                self.olsrd_proc = core.connect_or_start_profiled_mesh(
                         self.selected_profile)
 
                 #glib.io_add_watch(self.olsr_proc.stdout, # FILE DESCRIPTOR
@@ -180,8 +180,8 @@ class WinMeshUI:
 
     def shutdown(self):
         self.kill_olsrd()
-        workout.apply_rollback_params()
-        #workout.shutdown_and_cleanup_network_gui()
+        core.apply_rollback_params()
+        #core.shutdown_and_cleanup_network_gui()
 
     def close_application(self, widget):
         self.shutdown()
@@ -204,7 +204,7 @@ class WinMeshUI:
 
     def annotate_profiles(self, profiles):
         for k,v in profiles.iteritems():
-            matches = workout.find_matching_available_nets(v["ssid"], v["bssid"])
+            matches = core.find_matching_available_nets(v["ssid"], v["bssid"])
             if len(matches) > 0:
                 v["available"] = True
             else:
@@ -382,7 +382,7 @@ class WinMeshUI:
         TAB_IMAGE_HEIGHT = 40
 
         pixbuf = gtk.gdk.pixbuf_new_from_file(
-                workout.get_own_path(os.path.join('images', 'tabProfiles.png')))
+                core.get_own_path(os.path.join('images', 'tabProfiles.png')))
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
@@ -390,7 +390,7 @@ class WinMeshUI:
         add_page(notebook, "Profiles", image, hbox)
 
         pixbuf = gtk.gdk.pixbuf_new_from_file(
-                workout.get_own_path(os.path.join('images', 'tabLog.png')))
+                core.get_own_path(os.path.join('images', 'tabLog.png')))
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
@@ -408,7 +408,7 @@ class WinMeshUI:
         add_page(notebook, "Logs", image, self.textview)
 
         pixbuf = gtk.gdk.pixbuf_new_from_file(
-                workout.get_own_path(os.path.join('images', 'tabStatus.png')))
+                core.get_own_path(os.path.join('images', 'tabStatus.png')))
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
@@ -417,7 +417,7 @@ class WinMeshUI:
         add_page(notebook, "Status", image, label)
 
         pixbuf = gtk.gdk.pixbuf_new_from_file(
-                workout.get_own_path(os.path.join('images', 'tabHelp.png')))
+                core.get_own_path(os.path.join('images', 'tabHelp.png')))
         pixbuf = pixbuf.scale_simple(TAB_IMAGE_WIDTH, TAB_IMAGE_HEIGHT, gtk.gdk.INTERP_BILINEAR)
         image = gtk.image_new_from_pixbuf(pixbuf)
         image.show()
@@ -425,7 +425,7 @@ class WinMeshUI:
         vbox = gtk.VBox(False, 10)
 
         logo_pixbuf = gtk.gdk.pixbuf_new_from_file(
-                workout.get_own_path(os.path.join('images', 'commotion_logo.png')))
+                core.get_own_path(os.path.join('images', 'commotion_logo.png')))
         logo = gtk.image_new_from_pixbuf(logo_pixbuf)
         logo.show()
         vbox.pack_start(logo)
@@ -518,10 +518,10 @@ if __name__ == "__main__":
         sys.stdout = co
         sys.stderr = co
 
-        workout.refresh_net_list()
+        core.refresh_net_list()
 
     # TODO cli mode
     #app.print_directions()
-    #workout.print_available_networks()
+    #core.print_available_networks()
 
     app.main()

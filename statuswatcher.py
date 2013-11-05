@@ -1,4 +1,4 @@
-import workout
+import core
 import time
 
 class NetStatusWatcher:
@@ -9,7 +9,7 @@ class NetStatusWatcher:
 
     def run(self):
         while True
-            new_status = workout.iface_has_commotion(self.iface)
+            new_status = core.iface_has_commotion(self.iface)
             if (new_status != self.status) :
                 self.cb_set_status(new_status)
                 self.status = new_status
