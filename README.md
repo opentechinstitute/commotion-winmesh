@@ -67,3 +67,8 @@ Platform: Windows 7 Professional
 and all the plugin `.dll` files in the `olsrd` subdirectory.
 - The main script generates a new `[ssid].olsrd.conf` file locally for each profile.
 To make changes for all profiles, edit `templates/olsrd.conf.py`.
+
+###General notes
+- OLSRd will preemptively disable ICMP redirect processing in the registry on first
+run. It's not an option, and OLSRd doesn't give any advance warning. Afterward, a
+reboot is required.
