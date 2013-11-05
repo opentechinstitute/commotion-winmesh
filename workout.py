@@ -20,24 +20,6 @@ newline = "\r\n"
 
 commotion_BSSID_re = re.compile(r'[01]2:CA:FF:EE:BA:BE')
 commotion_default_SSID = 'commotionwireless.net'
-commotion_default_netsh_spec = {
-        "profile_name": commotion_default_SSID,
-        "ssid_hex": commotion_default_SSID.encode('hex').upper(),
-        "ssid": commotion_default_SSID,
-        "iface_name": "",
-        "bss_type": "IBSS",
-        "auth": "WPA2PSK",
-        "cipher": "AES"
-        }
-commotion_default_cnxp = {
-        "connectionMode": "wlan_connection_mode_profile",
-        "profile": None,  # will generate
-        "ssid": commotion_default_SSID,
-        "bssidList": ["02:CA:FF:EE:BA:BE"],
-        #"bssidList": ["FF:FF:FF:FF:FF:FF"],  # wildcard
-        "bssType": "dot11_BSS_type_infrastructure",
-        "flags": 0
-        }
 
 profile_extension = ".xml"
 olsrd_conf_extension = ".olsrd.conf"
@@ -76,7 +58,6 @@ OLSRD_PATH = "olsrd"
 profile_template_path = get_own_path("templates/profile_template.xml.py")
 profile_key_template_path = get_own_path("templates/sharedKey.xml.py")
 prev_profile_path = get_own_path(".prevprofile")
-netsh_export_path = get_own_path(".prevnet.xml")
 olsrd_exe_path = get_own_path(os.path.join(OLSRD_PATH, "olsrd.exe"))
 olsrd_conf_path = get_own_path(os.path.join(OLSRD_PATH, "olsrd.conf"))
 olsrd_conf_template_path = get_own_path("templates/olsrd.conf.py")
@@ -141,7 +122,6 @@ def get_wlan_profile_xml(PyWiWi_iface, profile_name):
 
 def get_wlan_current_connection(PyWiWi_iface):
     ''' Returns connection attributes if connected, None if not. '''
-    #try:
     iface_state = get_wlan_interface_state(PyWiWi_iface)[1]
     print "current iface state", iface_state
     if iface_state == "wlan_interface_state_connected":
@@ -149,8 +129,6 @@ def get_wlan_current_connection(PyWiWi_iface):
                                               'current_connection')
     else:
         cnx, CNX = None, None
-    #except:
-        #cnx, CNX = None, None
     return cnx, CNX
 
 
@@ -170,25 +148,6 @@ def get_current_connection(PyWiWi_iface):
     return result
 
 
-def get_current_net_bssid(PyWiWi_iface):
-    cnx = get_current_connection(PyWiWi_iface)
-    if cnx:
-        bssid = cnx["bssid"]
-    else:
-        bssid = None
-    return bssid
-
-
-def bssid_is_commotion(bssid):
-    #NOTE: This is not fault tolerant.
-    match = commotion_BSSID_re.match(bssid)
-    return match != None
-
-
-def iface_has_commotion(PyWiWi_iface):
-    return bssid_is_commotion(get_current_net_bssid(PyWiWi_iface))
-
-
 def collect_interfaces():
     ifaces = WindowsWifi.getWirelessInterfaces()
     wmi_ifaces = wmi.WMI().Win32_NetworkAdapter()
@@ -204,7 +163,6 @@ def collect_interfaces():
         iface.EnableStatic = wmi_iface_conf.EnableStatic
         iface.SetGateways = wmi_iface_conf.SetGateways
         # preserve initial state
-        #iface.initial_bssid = get_current_net_bssid(iface)
         iface.initial_connection = get_current_connection(iface)
         iface.netsh_name = wmi_iface.NetConnectionID
         iface.MAC = wmi_iface.MACAddress
@@ -282,28 +240,6 @@ def netsh_add_profile_cmd(path):
                     "\""])
 
 
-def netsh_connect_cmd(netsh_spec):
-    return "".join(["netsh wlan connect",
-                    " name=\"",
-                    netsh_spec["profile_name"],  # *not* full path, just name
-                    "\" interface=\"",
-                    netsh_spec["iface_name"],
-                    "\""])
-
-
-def netsh_export_profile_cmd(path, profile_name, iface_name):
-    return "".join(["netsh wlan export profile",
-                    " folder=\"",
-                    path,
-                    "\"",
-                    " name=\"",
-                    profile_name,
-                    "\"",
-                    " interface=\"",
-                    iface_name,
-                    "\""])
-
-
 def start_olsrd_cmd(iface_name, olsrd_conf):
     print "olsrd_exe_path", olsrd_exe_path
     return "".join([olsrd_exe_path,
@@ -332,32 +268,11 @@ def netsh_add_profile(path):
     return add.wait()
 
 
-def netsh_connect(netsh_spec):
-    cmd = netsh_connect_cmd(netsh_spec)
-    print cmd
-    conn = subprocess.Popen(cmd,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
-    return conn.wait()
-
-
-def netsh_export_profile(profile_name, iface_name):
-    netsh = subprocess.call(netsh_export_profile_cmd(netsh_export_path,
-                                                     profile_name,
-                                                     iface_name))
-    return netsh.wait()
-
-
 def start_olsrd(iface_name, olsrd_conf=olsrd_conf_path):
     olsrd = subprocess.Popen(start_olsrd_cmd(iface_name, olsrd_conf),
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
     return olsrd
-
-
-def netsh_export_current_profile(iface):
-    cnx = get_current_connection(iface)
-    netsh_export_profile(cnx.profile_name, iface.netsh_name)
 
 
 def save_rollback_params(iface, mesh_net):
@@ -407,14 +322,6 @@ def wlan_connect(iface, spec):
     print "connecting to", spec["profile_name"], "; result:", result
 
 
-def make_network(netsh_spec):
-    make_wlan_profile(netsh_spec)
-    netsh_add_profile(netsh_spec["ssid"])
-    netsh_connect(netsh_spec)
-    olsrd = start_olsrd(netsh_spec["iface_name"])
-    return olsrd
-
-
 def netsh_set_ip_cmd(netsh_name,
                      enable_DHCP,
                      ip=None,
@@ -456,7 +363,7 @@ def set_ip(iface, enable_DHCP, IPs=None, subnet_masks=None, gateways=None):
                 GatewayCostMetric=[1]*len(gateways))  #TODO?: bug for someone
 
 
-def make_network2(iface, netsh_spec, profile):
+def make_network(iface, netsh_spec, profile):
     make_wlan_profile(netsh_spec)
     netsh_add_profile(netsh_spec["ssid"])
     set_ip(iface, enable_DHCP=False,
@@ -467,13 +374,6 @@ def make_network2(iface, netsh_spec, profile):
     wlan_connect(iface, netsh_spec)
     olsrd = start_olsrd(netsh_spec["interface"].netsh_name, olsrd_conf)
     return olsrd
-
-
-def holdup():
-    # stay connected until done
-    holdup = ''
-    while holdup != '!':
-        holdup = raw_input("Enter ! to disconnect\n")
 
 
 def netsh_delete_profile_cmd(wlan_profile_name, interface_name):
@@ -522,44 +422,6 @@ def apply_rollback_params():
                              iface.netsh_name)
 
 
-def shutdown_and_cleanup_network(netsh_spec):
-    # disconnect from current network
-    #WindowsWifi.disconnect(target_net["interface"])
-    sd = subprocess.call(netsh_disconnect_cmd(netsh_spec))
-    sd.wait()
-
-    # show current info for adapter
-    # go back to old configuration when ready
-    #sd2 = subprocess.call(netsh_delete_profile_cmd(netsh_spec))
-    #sd2.wait()
-
-    apply_rollback_params()
-
-def shutdown_and_cleanup_network_gui():
-    refresh_net_list()
-    if idx > 0 and idx <= len(net_list):
-        # join an existing network
-        target_net = net_list[idx - 1]
-        netsh_spec = make_netsh_spec(target_net)
-    shutdown_and_cleanup_network(netsh_spec["iface_name"])
-
-
-def shutdown_and_cleanup_network_cli(netsh_spec):
-    # disconnect from current network
-    #WindowsWifi.disconnect(target_net["interface"])
-    sd = subprocess.call(netsh_disconnect_cmd(netsh_spec))
-    sd.wait()
-
-    # show current info for adapter
-    # go back to old configuration when ready
-    #delete_profile = raw_input("Delete this wireless profile? (Y|N)\n")
-    #if delete_profile == 'Y':
-        #sd2 = subprocess.call(netsh_delete_profile_cmd(netsh_spec))
-        #sd2.wait()
-
-    apply_rollback_params()
-
-
 def print_available_networks():
     global net_list
     if net_list is None:
@@ -588,32 +450,6 @@ def cli_choose_network():
 
 
 def make_netsh_spec(net):
-    wlan = dot11_to_wlan
-    netsh_spec = {
-            "interface": net["interface"],
-            "iface_name": net["interface"].netsh_name,
-            "MAC": net["interface"].MAC,
-            "profile_name": net["bss_list"][0].ssid,
-            "ssid_hex": net["bss_list"][0].ssid.encode('hex').upper(),
-            "ssid": net["bss_list"][0].ssid,
-            "bssid": net["bss_list"][0].bssid,
-            "dot11_bss_type": net["bss_list"][0].bss_type,
-            "bss_type": wlan[net["bss_list"][0].bss_type],
-            "auth": wlan[net["auth"]],
-            "cipher": wlan[net["cipher"]],
-            "key_material": net.get("key_material", None),
-            "key_type": ("keyType" if \
-                    wlan[net["auth"]] == "WEP" else "passPhrase")
-            }
-    if netsh_spec["key_material"] is not None:
-        netsh_spec["shared_key"] = apply_template(profile_key_template_path,
-                                                  netsh_spec)
-    else:
-        netsh_spec["shared_key"] = ""
-    return netsh_spec
-
-
-def make_netsh_spec2(net):
     wlan = dot11_to_wlan
     netsh_spec = {
             "interface": net["interface"],
@@ -663,12 +499,6 @@ def refresh_net_list():
     net_list.sort(key=lambda opt: opt["bss_list"][0].link_quality, reverse=True)
 
 
-def get_ssid_from_net_list(idx):
-    global net_list
-    if net_list is None: refresh_net_list()
-    return net_list[idx]["bss_list"][0]["SSID"]
-
-
 def connect_or_start_profiled_mesh(profile):
     print "selected mesh", profile["ssid"]
     #FIXME: Until interface selection in UI, just use first available
@@ -678,7 +508,7 @@ def connect_or_start_profiled_mesh(profile):
         target_iface = target_net["interface"]
         save_rollback_params(target_iface, profile)
         target_net["key_material"] = profile.get("psk", None)
-        netsh_spec = make_netsh_spec2(target_net)
+        netsh_spec = make_netsh_spec(target_net)
     else:
         print "creating new mesh", profile["ssid"]
         target_iface = iface_list[0]  # hack
@@ -694,42 +524,9 @@ def connect_or_start_profiled_mesh(profile):
                 "key_material": profile.get("psk", None)
                 }
         save_rollback_params(target_iface, dummy_net)
-        netsh_spec = make_netsh_spec2(dummy_net)
+        netsh_spec = make_netsh_spec(dummy_net)
         netsh_spec["iface_name"] = target_iface.netsh_name
-    olsrd = make_network2(target_iface, netsh_spec, profile)
+    olsrd = make_network(target_iface, netsh_spec, profile)
     return olsrd
-
-
-if __name__ == "__main__":
-    refresh_net_list()
-    net_choice = cli_choose_network()
-    if net_choice > 0 and net_choice <= len(net_list):
-        # join an existing network
-        target_net = net_list[net_choice - 1]
-        netsh_spec = make_netsh_spec(target_net)
-        make_network(netsh_spec)
-        holdup()  # pause waiting for the kill key
-        shutdown_and_cleanup_network_cli(netsh_spec["iface_name"])
-    elif net_choice == 0:
-        # start pseudo-commotion network (bad bssid)
-
-        # FIXME a bunch of code badly ripped from collect_networks()
-        wmi_ifaces = wmi.WMI().Win32_NetworkAdapter()
-        ifaces = WindowsWifi.getWirelessInterfaces()
-        ifaces_by_guid = {}
-        for wmi_iface in wmi_ifaces:
-            ifaces_by_guid[wmi_iface.GUID] = wmi_iface
-
-        for iface in ifaces:
-            iface.initial_bssid = get_current_net_bssid(iface)
-            iface.initial_connection = get_current_connection(iface)
-            iface.netsh_name = ifaces_by_guid[str(iface.guid)].NetConnectionID
-            # FIXME /a bunch of code badly ripped from collect_networks()
-
-        target_iface = cli_choose_iface(ifaces)
-        netsh_spec = make_netsh_spec(target_net)
-        make_network(netsh_spec)
-    else:
-        exit()
 
 

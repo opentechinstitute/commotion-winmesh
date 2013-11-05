@@ -96,8 +96,4 @@ class WindowsCommotionCore(CommotionCore):
         return profile
 
 
-#    @overrides(CommotionCore)
-#    def selectInterface(self, preferred=None):
-#         print "monkeypatch overridden method in base class, amazeballs" 
-
 all = ['JsonInfo', 'MeshStatus', 'PortingHacks', 'WindowsCommotionCore']
