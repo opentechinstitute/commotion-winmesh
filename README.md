@@ -78,3 +78,10 @@ To make changes for all profiles, edit `templates/olsrd.conf.py`.
 - If the app crashes and you joined a mesh that was configured to have a static IP, you will be left in a "broken" network state, to get back online simply manually set your tcp/ip settings to DHCP
 
 - There may be an issue with the Administrator rights not sticking on first run.  If you have trouble bringing up the mesh, try quitting and restarting
+
+###Credits
+
+Commotion Winmesh was developed by [Scal.io](http://scal.io) with the generous support of [Open Technology Institute](http://oti.newamerica.net/).
+
+- [Josh Steiner](https://github.com/vitriolix/)
+- [Jonathan Nelson](https://github.com/jnelson/)
