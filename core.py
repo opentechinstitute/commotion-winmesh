@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+
+# Commotion Winmesh was developed by Scal.io (http://scal.io) 
+# with the generous support of Open Technology Institute
+# (http://oti.newamerica.net/).
+#
+# Josh Steiner (https://github.com/vitriolix/)
+# Jonathan Nelson (https://github.com/jnelson/)
+
 import os
 import io
 import sys
