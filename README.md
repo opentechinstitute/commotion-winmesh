@@ -1,6 +1,13 @@
 ## Development environment setup
 
 Platform: Debian Wheezy.
+1. ``git clone`` this repo
+
+1. ``cd commotion-winmesh``
+
+1. ``git submodule init``
+
+1. ``git submodule update`` to pull in dependencies
 
 ### Cross-compiling olsrd for Windows on Debian
 
