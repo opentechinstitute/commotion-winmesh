@@ -18,8 +18,8 @@ import subprocess  # for netsh and olsrd
 import time
 try:  # Windows-specific
     import wmi  # http://timgolden.me.uk/python/wmi/index.html
-    from PyWiWi import WindowsWifi
-    from PyWiWi import WindowsNativeWifiApi as PWWnw
+    from external.PyWiWi import WindowsWifi
+    from external.PyWiWi import WindowsNativeWifiApi as PWWnw
     WMI = wmi.WMI()
 except:
     pass

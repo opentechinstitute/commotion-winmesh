@@ -1,6 +1,13 @@
 ## Development environment setup
 
 Platform: Debian Wheezy.
+1. ``git clone`` this repo
+
+1. ``cd commotion-winmesh``
+
+1. ``git submodule init``
+
+1. ``git submodule update`` to pull in dependencies
 
 ### Cross-compiling olsrd for Windows on Debian
 
@@ -22,16 +29,14 @@ will work just as well and includes more plugins.
 
 ### Building winmesh.exe
 
-On a windows machine, run:
+To make a development build with console, run:
 
-``pyinstaller winmesh.spec``
+``pyinstaller --manifest=manifest.xml winmesh.spec``
 
-To build a release build that hides the console, run:
+To make a release build that hides the console, run:
 
-``pyinstaller --noconsole winmesh.spec``
+``build.bat``
 
-
-__TODO__
 
 ### Preparing the Windows development environment
 
