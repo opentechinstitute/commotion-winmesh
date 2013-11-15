@@ -1,6 +1,7 @@
 ## Development environment setup
 
 Platform: Debian Wheezy.
+
 1. ``git clone`` this repo
 
 1. ``cd commotion-winmesh``
