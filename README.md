@@ -22,16 +22,14 @@ will work just as well and includes more plugins.
 
 ### Building winmesh.exe
 
-On a windows machine, run:
+To make a development build with console, run:
 
-``pyinstaller winmesh.spec``
+``pyinstaller --manifest=manifest.xml winmesh.spec``
 
-To build a release build that hides the console, run:
+To make a release build that hides the console, run:
 
-``pyinstaller --noconsole winmesh.spec``
+``build.bat``
 
-
-__TODO__
 
 ### Preparing the Windows development environment
 
