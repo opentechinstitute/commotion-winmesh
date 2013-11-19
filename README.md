@@ -2,21 +2,12 @@
 
 Platform: Debian Wheezy.
 
-1. ``git clone`` this repo
-
-1. ``cd commotion-winmesh``
-
-1. ``git submodule init``
-
-1. ``git submodule update`` to pull in dependencies
-
 ### Cross-compiling olsrd for Windows on Debian
 
 1. The version of mingw-w64 in the Debian Wheezy repository has a bug (fixed
    in [changeset
    5386](http://sourceforge.net/apps/trac/mingw-w64/changeset/5386)) which
    causes problems for us, so we need to use a newer version.
-
 
 1. ``> apt-get install dpkg-cross bison flex``
 
@@ -28,16 +19,7 @@ will work just as well and includes more plugins.
 
 1. ``> CC=i686-w64-mingw32-gcc make build_all OS=win32``
 
-### Building winmesh.exe
-
-To make a development build with console, run:
-
-``pyinstaller --manifest=manifest.xml winmesh.spec``
-
-To make a release build that hides the console, run:
-
-``build.bat``
-
+1. Copy the resulting olsrd binary to commotion-winmesh/olsrd in the build tree that will create below
 
 ### Preparing the Windows development environment
 
@@ -45,7 +27,6 @@ Platform: Windows 7 Professional
 
 1. Install the python.org [Python
    2.7.5](http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi)
-
 
 1. setup your path variables, e.g. adding C:\Python27 and C:\Python27\Scripts
 
@@ -66,6 +47,25 @@ Platform: Windows 7 Professional
 1. Install pyjavaproperties via pip: `pip install pyjavaproperties`
 
 1. Install pyinstaller via pip: `pip install pyinstaller`
+
+
+### Building winmesh.exe
+
+1. ``git clone`` this repo
+
+1. ``cd commotion-winmesh``
+
+1. ``git submodule init``
+
+1. ``git submodule update`` to pull in dependencies
+
+To make a development build with console, run:
+
+``pyinstaller --manifest=manifest.xml winmesh.spec``
+
+To make a release build that hides the console, run:
+
+``build.bat``
 
 
 ###olsrd.conf
