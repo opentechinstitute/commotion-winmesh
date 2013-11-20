@@ -6,7 +6,7 @@ Platform: Debian Wheezy.
 
 #### 32-bit
 From the olsrd build documentation:
-``
+```
 # Notes for compiling olsrd.exe under Windows using MinGW
 # ----------------------------------------------------
 # You can build olsrd.exe using MinGW on either Windows or GNU/Linux.
@@ -24,7 +24,7 @@ From the olsrd build documentation:
 #   cd olsrd
 #   make clean_all
 #   CC=i586-mingw32msvc-gcc make build_all OS=win32
-``
+```
 #### 64-bit (Buggy - proceed at your own risk)_
 1. The version of mingw-w64 in the Debian Wheezy repository has a bug (fixed
    in [changeset
