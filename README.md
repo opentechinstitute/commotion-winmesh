@@ -2,21 +2,34 @@
 
 Platform: Debian Wheezy.
 
-1. ``git clone`` this repo
-
-1. ``cd commotion-winmesh``
-
-1. ``git submodule init``
-
-1. ``git submodule update`` to pull in dependencies
-
 ### Cross-compiling olsrd for Windows on Debian
 
+#### 32-bit
+From the olsrd build documentation:
+```
+# Notes for compiling olsrd.exe under Windows using MinGW
+# ----------------------------------------------------
+# You can build olsrd.exe using MinGW on either Windows or GNU/Linux.
+# For MinGW on Windows, run this in the msys shell:
+#
+#   cd olsrd
+#   make clean_all
+#   make build_all OS=win32
+#
+# MinGW also runs on GNU/Linux so you can build Windows binaries on
+# any GNU/Linux machine.  It is especially easy on a
+# Debian/Ubuntu/Mint system:
+#
+#   sudo apt-get install mingw32 flex bison make
+#   cd olsrd
+#   make clean_all
+#   CC=i586-mingw32msvc-gcc make build_all OS=win32
+```
+#### 64-bit (Buggy - proceed at your own risk)_
 1. The version of mingw-w64 in the Debian Wheezy repository has a bug (fixed
    in [changeset
    5386](http://sourceforge.net/apps/trac/mingw-w64/changeset/5386)) which
    causes problems for us, so we need to use a newer version.
-
 
 1. ``> apt-get install dpkg-cross bison flex``
 
@@ -28,24 +41,14 @@ will work just as well and includes more plugins.
 
 1. ``> CC=i686-w64-mingw32-gcc make build_all OS=win32``
 
-### Building winmesh.exe
-
-To make a development build with console, run:
-
-``pyinstaller --manifest=manifest.xml winmesh.spec``
-
-To make a release build that hides the console, run:
-
-``build.bat``
-
-
 ### Preparing the Windows development environment
 
 Platform: Windows 7 Professional
 
+1. Install [Git for Windows](http://git-scm.com/download/win)
+
 1. Install the python.org [Python
    2.7.5](http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi)
-
 
 1. setup your path variables, e.g. adding C:\Python27 and C:\Python27\Scripts
 
@@ -67,6 +70,26 @@ Platform: Windows 7 Professional
 
 1. Install pyinstaller via pip: `pip install pyinstaller`
 
+
+### Building winmesh.exe
+
+1. ``git clone`` this repo
+
+1. ``cd commotion-winmesh``
+
+1. ``git submodule init``
+
+1. ``git submodule update`` to pull in dependencies
+
+To make a development build with console, run:
+
+``pyinstaller --manifest=manifest.xml winmesh.spec``
+
+To make a release build that hides the console, run:
+
+``build.bat``
+
+Copy the olsrd binary and plugins (if applicable) that were compiled in the first step into commotion-winmesh/olsrd
 
 ###olsrd.conf
 - Paths to plugins must be specified relative to `olsrd.exe`. We keep `olsrd.exe`

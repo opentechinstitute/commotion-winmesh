@@ -8,4 +8,4 @@
 	branch = decompose
 [submodule "PyWiWi"]
 	path = external/PyWiWi
-	url = git@github.com:jnelson/PyWiWi.git
+	url = https://github.com/jnelson/PyWiWi.git
