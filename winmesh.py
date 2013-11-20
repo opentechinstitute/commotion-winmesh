@@ -20,7 +20,13 @@ import time
 import strings
 import urllib
 import traceback
-from commotion import *
+from external.commotion_mesh_applet import commotion_applet_support
+from external.commotion_linux_py import commotionc
+from external import WindowsCommotionCore
+
+MeshStatus = commotion_applet_support.MeshStatus
+PortingHacks = commotion_applet_support.PortingHacks
+
 
 class OlsrdThread(threading.Thread):
     def __init__(self, olsrd_proc):
@@ -80,7 +86,7 @@ class WinMeshUI:
         self.selected_profile = None
         self.dirty = False
         self.portinghacks = portinghacks
-        self.imagedir = 'external/commotion-mesh-applet/'
+        self.imagedir = 'external/commotion_mesh_applet/'
         self.mesh_status = MeshStatus(self.portinghacks, imagedir=self.imagedir)
         self.commotion = WindowsCommotionCore(
                 profiledir="".join([core.get_own_path('/profiles/'), "/"]),

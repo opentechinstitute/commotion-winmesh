@@ -1,1 +1,0 @@
-../external/commotion-mesh-applet/commotion_applet_support.py
