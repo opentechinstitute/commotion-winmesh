@@ -89,7 +89,13 @@ To make a release build that hides the console, run:
 
 ``build.bat``
 
-Copy the olsrd binary and plugins (if applicable) that were compiled in the first step into commotion-winmesh/olsrd
+The winmesh.exe binary and the .dlls on which it depends will be built in commotion-winmesh/dist/winmesh.
+
+### Running and Distributing Winmesh
+
+Copy the olsrd binary and plugins (if applicable) that were compiled in the first step into commotion-winmesh/dist/winmesh/olsrd
+
+As an Administrator, execute commotion-winmesh/dist/winmesh/winmesh.exe
 
 ###olsrd.conf
 - Paths to plugins must be specified relative to `olsrd.exe`. We keep `olsrd.exe`
